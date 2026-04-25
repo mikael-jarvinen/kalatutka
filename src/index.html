@@ -5,16 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kalatutka — Turun rantakalastusennuste</title>
   <link rel="stylesheet" href="styles.css">
-  <script>
-    // Siika season is roughly two weeks after ice-out through mid-May.
-    // Use months 4–5 as the practical window; everything else lands on
-    // rantakalastus, which has a much wider open-water season.
-    (function () {
-      var m = new Date().getMonth() + 1;
-      var target = (m === 4 || m === 5) ? "siika.html" : "rantakalastus.html";
-      location.replace(target);
-    })();
-  </script>
+  <script src="redirect.js"></script>
 </head>
 <body>
   <noscript>

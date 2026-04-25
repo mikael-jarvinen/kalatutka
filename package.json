@@ -9,7 +9,7 @@
     "refresh": "node scripts/refresh.mjs",
     "refresh:dry": "node scripts/refresh.mjs --dry-run",
     "test": "echo \"No tests yet — see ROADMAP.md → 'Unit tests for scoring.js'\" && exit 0",
-    "lint:check": "node --check src/data/data.js && node --check src/scoring.js && node --check src/app.js && node --check src/research.js && node --check src/rantakalastus.js && node --check scripts/refresh.mjs && echo 'JS syntax OK'"
+    "lint:check": "node --check src/data/data.js && node --check src/scoring.js && node --check src/app.js && node --check src/research.js && node --check src/rantakalastus.js && node --check src/redirect.js && node --check scripts/refresh.mjs && echo 'JS syntax OK'"
   },
   "engines": {
     "node": ">=22"
