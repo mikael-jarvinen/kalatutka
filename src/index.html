@@ -26,7 +26,7 @@
   <div class="data-sources">
     <h3>🌊 Vesilämpötila — valitse lähde</h3>
     <div class="row">
-      <div class="source-card" id="src-marine" onclick="selectSource('marine')">
+      <div class="source-card" id="src-marine" data-source="marine">
         <div class="name">
           Open-Meteo Marine<br>
           <span style="font-weight:400;color:#64748b">Avovesimalli (Saaristomeri)</span>
@@ -34,7 +34,7 @@
         <div class="value" id="marine-temp">–</div>
         <div class="trend" id="marine-trend">–</div>
       </div>
-      <div class="source-card" id="src-foglo" onclick="selectSource('foglo')">
+      <div class="source-card" id="src-foglo" data-source="foglo">
         <div class="name">
           FMI Föglö Degerby<br>
           <span style="font-weight:400;color:#64748b">Rannikkomittaus (~50 km SW)</span>
@@ -42,7 +42,7 @@
         <div class="value" id="foglo-temp">–</div>
         <div class="trend" id="foglo-trend">–</div>
       </div>
-      <div class="source-card" id="src-override" onclick="selectSource('override')">
+      <div class="source-card" id="src-override" data-source="override">
         <div class="name">
           Oma havainto rannalla<br>
           <span style="font-weight:400;color:#64748b">Saaronniemi (suositus)</span>

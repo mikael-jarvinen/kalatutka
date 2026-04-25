@@ -8,6 +8,8 @@
 
 import { WEATHER, TODAY } from "./data/data.js";
 
+const TODAY_IDX = WEATHER.time.indexOf(TODAY);
+
 // ---------------------------------------------------------------------------
 // Generic shape function
 // ---------------------------------------------------------------------------
@@ -163,11 +165,10 @@ export function scoreDay(idx, waterTempToday, waterTrend7d) {
   const cloudPct = WEATHER.cloudMean[idx];
 
   // Project water temperature for future days (crude — see methodology.md)
-  const todayIdx = WEATHER.time.indexOf(TODAY);
-  const daysFromToday = idx - todayIdx;
+  const daysFromToday = idx - TODAY_IDX;
   let projectedWater = waterTempToday;
-  if (daysFromToday > 0 && todayIdx >= 0) {
-    const airAvgToday = (WEATHER.tmax[todayIdx] + WEATHER.tmin[todayIdx]) / 2;
+  if (daysFromToday > 0 && TODAY_IDX >= 0) {
+    const airAvgToday = (WEATHER.tmax[TODAY_IDX] + WEATHER.tmin[TODAY_IDX]) / 2;
     const airAvgTarget = (WEATHER.tmax[idx] + WEATHER.tmin[idx]) / 2;
     projectedWater =
       waterTempToday +

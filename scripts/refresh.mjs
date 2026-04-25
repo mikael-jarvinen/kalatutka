@@ -97,8 +97,13 @@ function addDays(iso, days) {
 // Fetchers
 // ---------------------------------------------------------------------------
 
+const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_OPTS = {
+  headers: { "user-agent": "siikasaa-refresh/1.0" }
+};
+
 async function fetchJSON(url, label) {
-  const res = await fetch(url, { headers: { "user-agent": "siikasaa-refresh/1.0" } });
+  const res = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) {
     throw new Error(`${label} ${res.status} ${res.statusText} for ${url}`);
   }
@@ -106,7 +111,7 @@ async function fetchJSON(url, label) {
 }
 
 async function fetchText(url, label) {
-  const res = await fetch(url, { headers: { "user-agent": "siikasaa-refresh/1.0" } });
+  const res = await fetch(url, { ...FETCH_OPTS, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) {
     throw new Error(`${label} ${res.status} ${res.statusText} for ${url}`);
   }

@@ -22,12 +22,14 @@ import {
 // State
 // ---------------------------------------------------------------------------
 
+const TODAY_IDX = WEATHER.time.indexOf(TODAY);
+
 const state = {
   /** @type {"marine"|"foglo"|"override"} */
   source: "override",
   overrideTemp: OVERRIDE_DEFAULTS.temp,
   overrideTrend: OVERRIDE_DEFAULTS.trend7d,
-  selectedIdx: WEATHER.time.indexOf(TODAY)
+  selectedIdx: TODAY_IDX
 };
 
 // ---------------------------------------------------------------------------
@@ -47,11 +49,10 @@ function getActiveTrend() {
 }
 
 function selectSource(s) {
+  if (state.source === s) return;
   state.source = s;
   render();
 }
-// Expose for inline onclick in index.html
-window.selectSource = selectSource;
 
 // ---------------------------------------------------------------------------
 // Date helpers (UI strings — kept here because they're for display)
@@ -75,7 +76,6 @@ function dayOfWeek(s) {
 // ---------------------------------------------------------------------------
 
 function render() {
-  // 1. Source card selection state
   ["marine", "foglo", "override"].forEach(s => {
     document.getElementById("src-" + s).classList.toggle("selected", state.source === s);
   });
@@ -93,24 +93,18 @@ function render() {
   };
   document.getElementById("activeSource").textContent = sourceLabels[state.source];
 
-  // 2. Day grid
   renderDayGrid();
-
-  // 3. Weekend callout
   renderWeekendCallout();
-
-  // 4. Detail panel
   renderDetail();
 }
 
 function renderDayGrid() {
   const grid = document.getElementById("daysGrid");
   grid.innerHTML = "";
-  const todayIdx = WEATHER.time.indexOf(TODAY);
   const temp = getActiveTemp();
   const trend = getActiveTrend();
 
-  for (let i = todayIdx; i < Math.min(todayIdx + 7, WEATHER.time.length); i++) {
+  for (let i = TODAY_IDX; i < Math.min(TODAY_IDX + 7, WEATHER.time.length); i++) {
     const d = WEATHER.time[i];
     const { total, penalties } = scoreDay(i, temp, trend);
     const card = document.createElement("button");
@@ -120,7 +114,7 @@ function renderDayGrid() {
     card.style.cursor = "pointer";
     card.onclick = () => { state.selectedIdx = i; render(); };
     card.innerHTML =
-      '<div class="day-label">' + dayOfWeek(d) + (i === todayIdx ? " · tänään" : "") + '</div>' +
+      '<div class="day-label">' + dayOfWeek(d) + (i === TODAY_IDX ? " · tänään" : "") + '</div>' +
       '<div class="day-date">' + formatDate(d) + '</div>' +
       '<div class="day-score">' + total + '</div>' +
       '<div class="day-verdict">' + scoreVerdict(total) + '</div>' +
@@ -136,12 +130,11 @@ function renderDayGrid() {
 
 function renderWeekendCallout() {
   const el = document.getElementById("weekendCallout");
-  const todayIdx = WEATHER.time.indexOf(TODAY);
   const temp = getActiveTemp();
   const trend = getActiveTrend();
   const entries = [];
 
-  for (let i = todayIdx; i < Math.min(todayIdx + 7, WEATHER.time.length); i++) {
+  for (let i = TODAY_IDX; i < Math.min(TODAY_IDX + 7, WEATHER.time.length); i++) {
     const d = new Date(WEATHER.time[i] + "T12:00:00");
     if (d.getDay() === 0 || d.getDay() === 6) {
       entries.push({ i, score: scoreDay(i, temp, trend).total, date: WEATHER.time[i] });
@@ -175,7 +168,6 @@ function renderDetail() {
   const trend = getActiveTrend();
   const { total, baseScore, factors, penalties, mult } = scoreDay(i, temp, trend);
   const hourly = HOURLY[date];
-  const todayIdx = WEATHER.time.indexOf(TODAY);
 
   let hourlyHTML = "";
   if (hourly) {
@@ -226,7 +218,7 @@ function renderDetail() {
     '<div class="detail-panel">' +
       '<div class="detail-header">' +
         '<h2>' + dayOfWeek(date) + ' ' + formatDate(date) +
-          (i === todayIdx ? " (tänään)" : "") + '</h2>' +
+          (i === TODAY_IDX ? " (tänään)" : "") + '</h2>' +
         '<div class="big-score" style="color:' + scoreColor(total) + '">' +
           total + ' / 100 · ' + scoreVerdict(total) +
         '</div>' +
@@ -259,6 +251,7 @@ function setupOverrideControls() {
   const overrideTrendDisplay = document.getElementById("override-trend");
 
   function applyTemp(v) {
+    if (v === state.overrideTemp && state.source === "override") return;
     state.overrideTemp = v;
     overrideRange.value = v;
     overrideNum.value = v;
@@ -268,6 +261,7 @@ function setupOverrideControls() {
     render();
   }
   function applyTrend(v) {
+    if (v === state.overrideTrend && state.source === "override") return;
     state.overrideTrend = v;
     trendRange.value = v;
     trendBadge.textContent = (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " °C";
@@ -311,7 +305,14 @@ function init() {
     "7 vrk: " + (state.overrideTrend >= 0 ? "+" : "−") + Math.abs(state.overrideTrend).toFixed(1) + " °C";
 
   setupOverrideControls();
+  setupSourceCards();
   render();
+}
+
+function setupSourceCards() {
+  for (const card of document.querySelectorAll(".source-card[data-source]")) {
+    card.addEventListener("click", () => selectSource(card.dataset.source));
+  }
 }
 
 init();
