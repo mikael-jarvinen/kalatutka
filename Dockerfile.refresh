@@ -1,0 +1,19 @@
+# Refresh image: small Node container that runs scripts/refresh.mjs in a loop.
+#
+# The script writes data.js + snapshot.json into /data, which is mounted as a
+# shared volume that the web container reads. REFRESH_INTERVAL_HOURS controls
+# the cadence (default 4h).
+
+FROM node:22-alpine
+
+RUN apk add --no-cache tini
+
+WORKDIR /app
+COPY scripts/ /app/scripts/
+COPY deploy/refresh-entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENV SIIKASAA_OUT_DIR=/data
+ENV REFRESH_INTERVAL_HOURS=4
+
+ENTRYPOINT ["/sbin/tini", "--", "/app/entrypoint.sh"]

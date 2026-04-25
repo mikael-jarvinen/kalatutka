@@ -1,0 +1,17 @@
+{
+  "name": "siikasaa-saaronniemi",
+  "version": "0.1.0",
+  "description": "Whitefish (siika) shore-fishing forecaster for Saaronniemi, Ruissalo, Turku.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8000 --directory src",
+    "refresh": "node scripts/refresh.mjs",
+    "refresh:dry": "node scripts/refresh.mjs --dry-run",
+    "test": "echo \"No tests yet — see ROADMAP.md → 'Unit tests for scoring.js'\" && exit 0",
+    "lint:check": "node --check src/data/data.js && node --check src/scoring.js && node --check src/app.js && node --check src/research.js && node --check scripts/refresh.mjs && echo 'JS syntax OK'"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

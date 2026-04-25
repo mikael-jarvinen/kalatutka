@@ -1,0 +1,50 @@
+# docker-compose.yml — Siikasää self-contained stack.
+#
+#   web      nginx:alpine, serves /usr/share/nginx/html. The data/ subdir is
+#            mounted from the shared volume, read-only.
+#   refresh  node:22-alpine, runs scripts/refresh.mjs every
+#            REFRESH_INTERVAL_HOURS. Writes to the shared volume, read-write.
+#
+# Front this with your existing nginx reverse proxy:
+#
+#   location / {
+#       proxy_pass http://127.0.0.1:8088;
+#       proxy_set_header Host $host;
+#       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#       proxy_set_header X-Forwarded-Proto $scheme;
+#   }
+#
+# See deploy/README.md for full operator notes.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: siikasaa-web:latest
+    restart: unless-stopped
+    ports:
+      # Bind to 127.0.0.1 only — the host nginx reverse-proxies to it.
+      - "127.0.0.1:8088:80"
+    volumes:
+      - siikasaa-data:/usr/share/nginx/html/data:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  refresh:
+    build:
+      context: .
+      dockerfile: Dockerfile.refresh
+    image: siikasaa-refresh:latest
+    restart: unless-stopped
+    environment:
+      REFRESH_INTERVAL_HOURS: "${REFRESH_INTERVAL_HOURS:-4}"
+      SIIKASAA_OUT_DIR: /data
+    volumes:
+      - siikasaa-data:/data
+
+volumes:
+  siikasaa-data:

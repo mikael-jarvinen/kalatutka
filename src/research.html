@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiede ja perustelut · Siikasää</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <nav class="site-nav">
+    <a href="index.html">Ennuste</a>
+    <a href="research.html" class="active">Tiede ja perustelut</a>
+  </nav>
+
+  <h1>Tiede ja perustelut</h1>
+  <div class="subtitle">
+    Miksi siika syö silloin kun syö — ja miten ennusteen pisteet on rakennettu ·
+    snapshot haettu <strong id="dataStamp">–</strong>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-button active" data-tab="tiede" role="tab">Tiede ja perustelut</button>
+    <button class="tab-button" data-tab="algoritmi" role="tab">
+      Algoritmin spesifikaatio<span class="lang-tag">EN</span>
+    </button>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 1: Finnish, angler-facing science                                  -->
+  <!-- ===================================================================== -->
+  <section class="tab-panel article active" id="panel-tiede" role="tabpanel">
+
+    <h2>Miksi tämä työkalu on olemassa</h2>
+    <p>
+      Tavalliset kalakalenterit (solunar, kuun vaiheet) on kehitetty vuoroveden
+      voimakkaille merialueille. <strong>Itämerellä vuorovesi on alle 20 cm</strong> —
+      se ei ohjaa siian käyttäytymistä mihinkään suuntaan. Yleiset säänäkökulmat
+      eivät taas ota huomioon Saaronniemen geometriaa eivätkä kevätsiian
+      biologiaa. Tämä työkalu yrittää korjata molemmat puutteet: pisteyttää
+      Saaronniemen olosuhteet siten kuin ne <em>oikeasti</em> vaikuttavat
+      <em>siian</em> rantasyöntiin.
+    </p>
+
+    <h2>1. Siian biologia — miksi nämä tekijät</h2>
+    <p>
+      Eurooppalainen siika (<em>Coregonus lavaretus</em>) on opportunistinen
+      yleissyöjä, mutta kevään rantakalastuksen kannalta tärkeitä piirteitä
+      ovat:
+    </p>
+    <ul>
+      <li>
+        <strong>Näköaisti ratkaisee.</strong> Siika on <em>sight-feeder</em>:
+        se tunnistaa ravintonsa silmillä, ei hajulla. Siksi
+        <strong>veden kirkkaus, valon määrä ja vuorokaudenaika</strong> ovat
+        ratkaisevia. Sameutuneessa vedessä siika ei syö, vaikka ruokaa olisi.
+      </li>
+      <li>
+        <strong>Päiväaktiivinen, kaksi syöntipiikkiä.</strong>
+        Aamupäivän piikki noin <strong>10–12</strong> ja iltapäivän
+        <strong>17–19</strong>. Aamuhämärä ja yö eivät ole siian aikaa, koska
+        näkyvyyttä ei ole.
+      </li>
+      <li>
+        <strong>Pohjasta syövä keväällä.</strong> Saalis on
+        <strong>harvasukamadot</strong> (polykeetit) jotka nousevat
+        sora–hiekkapohjasta auringon lämmittäessä sedimenttiä. Toissijaisesti
+        amfipodit (<em>Gammarus</em>, <em>Idotea</em>).
+      </li>
+      <li>
+        <strong>Kausi on kapea: ~3–6 viikkoa jäidenlähdöstä.</strong>
+        Tyypillisesti kahden viikon päästä jäidenlähdöstä toukokuun puoleenväliin.
+        Kausi loppuu kun vesi nousee <strong>yli 12 °C</strong> — silloin
+        särki ja ahven valtaavat rannat.
+      </li>
+    </ul>
+
+    <h2>2. Vesilämpötila on tärkein muuttuja</h2>
+    <p>
+      Tämä on kaikkien ennustettavien tekijöiden kuningas. Ei ilman lämpötila —
+      <strong>veden lämpötila</strong>. Ilma on huono mittari rantaveden
+      lämmöstä, koska vedellä on lämpöinertia ja matalat poukamat lämpenevät
+      omaan tahtiinsa.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Vedenlämpö</th><th>Tilanne rannalla</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>&lt; 2 °C</td><td>Jää juuri lähtenyt; siika ei vielä syö rannalla</td></tr>
+        <tr><td>2–4 °C</td><td>Käynnistymisvaihe; epävarmaa</td></tr>
+        <tr><td><strong>4–8 °C</strong></td><td><strong>Huippukausi — siika parveissa pohjasta</strong></td></tr>
+        <tr><td>8–12 °C</td><td>Kauden loppuvaihe; särki ja ahven tulevat</td></tr>
+        <tr><td>&gt; 12 °C</td><td>Kausi käytännössä ohi</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Pisteytysmalli reagoi tähän kahdella tavalla: vesilämmölle on iso
+      <strong>20 % paino</strong> osatekijänä, ja sen päälle <strong>kovat
+      kerroinrangaistukset</strong> jos vesi on alle 4 °C (×0.4) tai yli 12 °C
+      (×0.5). Yksi kylmä vesi voi siis <em>yksinään</em> tiputtaa muuten hyvän
+      päivän surkeaksi — kuten käytännössäkin.
+    </p>
+    <p>
+      <strong>Tärkeä vinkki:</strong> oma rannalta otettu mittaus on aina
+      luotettavampi kuin malli. Open-Meteon avovesimalli on usein 2–3 °C
+      lämpimämpi kuin matalan rannan oma vesi, varsinkin kylmän
+      pohjois/luoteistuulen jälkeen. Käytä ennustesivun
+      ”Oma havainto rannalla” -liukua kun on uusi mittaus.
+    </p>
+
+    <h2>3. Tuulen suunta — Saaronniemen geometria</h2>
+    <p>
+      Saaronniemen kärki (Kolkannokka) avautuu <strong>länsi/lounaan</strong>
+      suuntaan, ja avoin Saaristomeri on etelässä ja lännessä. Tämä asettaa
+      tuulet hyvin epäsymmetrisesti:
+    </p>
+    <ul>
+      <li>
+        <strong>Lounas (~225°) on paras.</strong> Tuuli puhaltaa avovedeltä
+        rantaan päin, sekoittaa pohjaa, irrottaa harvasukamatoja ja amfipodeja
+        ja työntää lämmintä pintavettä rantaan.
+      </li>
+      <li>
+        <strong>Koillinen (~45°) on pahin.</strong> Tuuli puhaltaa rannalta
+        merelle (offshore), kylmää ilmaa, ja mikä pahinta — se ajaa lämmintä
+        pintavettä pois rannasta ja nostaa kylmää syvävettä tilalle. Yhdistelmä
+        on erityisen tuhoisa kun vesi on alle 7 °C ja tuulee yli 8 m/s — tästä
+        tilanteesta on oma erikoisrangaistus (×0.7).
+      </li>
+    </ul>
+    <p>
+      Tuulen <strong>voimakkuus</strong> on toinen ulottuvuus.
+      Optimi on 2–6 m/s: riittää sekoittamaan pohjaa, ei sameuta vettä. Yli
+      14 m/s vesi sameutuu ja siika lakkaa näkemästä saalistaan.
+      Aivan tyyni (alle 0.5 m/s) saa pisteytyksen 40 — se ei sekoita pohjaa,
+      mutta sight-feedingille se ei myöskään ole este.
+    </p>
+
+    <h2>4. Ilmanpaine — muutos, ei taso</h2>
+    <p>
+      Kalastusperinteessä ”paine vaikuttaa kalan syöntihaluun” on yleinen
+      uskomus. Biofysikaalisesti se on kuitenkin epätodennäköinen: koko
+      sääjärjestelmän paine-ero (20–40 hPa) on pieni verrattuna siihen
+      painevaihteluun, jonka kala itse tuottaa <em>uimalla yhden metrin
+      verran ylös tai alas</em> (~100 hPa).
+    </p>
+    <p>
+      Mitä paineessa <em>oikeasti</em> kannattaa katsoa, on
+      <strong>muutosnopeus</strong>. Se ei vaikuta suoraan kalaan vaan toimii
+      <em>välikätenä säämuutoksille</em> — pilvisyydelle, tuulelle, lämpötilan
+      vaihtelulle, sateelle. Nämä taas vaikuttavat siian syöntiin oikeasti.
+    </p>
+    <ul>
+      <li><strong>3–8 hPa muutos / 24 h</strong> → optimi (sääjärjestelmä liikkeellä)</li>
+      <li><strong>&lt; 3 hPa</strong> → vakaa, ”kala asettunut”</li>
+      <li><strong>&gt; 15 hPa</strong> → liian rajua, ohimenevä syömättömyys ennen rajuilmaa</li>
+    </ul>
+    <p>
+      Mallissa paineen muutosta katsotaan kahdella ikkunalla: 24 h (paino 12)
+      ja 48 h (paino 6). Absoluuttinen paine ei tule mukaan lainkaan.
+    </p>
+
+    <h2>5. Sade ja sameus</h2>
+    <p>
+      Pienet sateet (alle 2 mm/vrk) eivät juurikaan haittaa. Rankka sade
+      sameuttaa veden ja blokkaa sight-feedingin; siika ei syö.
+      <strong>Edellisten 48 h sateet</strong> ovat usein ratkaisevampia kuin
+      kyseisen päivän — vesi tarvitsee aikaa kirkastua.
+      Saaristomeren alhainen suolaisuus (5–7 ‰) tarkoittaa että makean veden
+      valuma ei sokkilailla muuta suolaisuutta, mutta voi paikallisesti
+      jäähdyttää.
+    </p>
+
+    <h2>6. Pilvisyys ja valo</h2>
+    <p>
+      Tämä on hieman vastakkainen mitä yleensä kuvitellaan. Aurinko ei pelästytä
+      siikaa, vaan päinvastoin: <strong>aurinko lämmittää pohjasedimenttiä,
+      mikä saa harvasukamadot möyrimään</strong> ja siika tulee parveissa
+      pohjalle syömään niitä.
+    </p>
+    <ul>
+      <li>0–10 % pilvisyys → 85 (hyvä, joskaan ei aivan optimi keväällä)</li>
+      <li>10–60 % → 100 (paras: harsopilvistä, riittävästi auringonsäteilyä)</li>
+      <li>60–80 % → 70</li>
+      <li>80–95 % → 45</li>
+      <li>&gt; 95 % → 25 (täyspilvistä; pohja ei lämpiä, madot eivät nouse)</li>
+    </ul>
+
+    <h2>7. Mitä mallissa <em>ei</em> ole — tarkoituksella</h2>
+    <ul>
+      <li>
+        <strong>Solunar / kuun vaiheet.</strong> Itämerellä vuorovesi on alle
+        20 cm, joten valtamerille kehitetyt teoriat eivät päde.
+      </li>
+      <li>
+        <strong>Absoluuttinen ilmanpaine.</strong> Vain muutos sisältää
+        signaalin (ks. yllä).
+      </li>
+      <li>
+        <strong>Yleiset kalakalenterit.</strong> Niissä ei ole tietoa siian
+        biologiasta eikä Itämeren erityisolosuhteista.
+      </li>
+    </ul>
+
+    <h2>8. Yhteenveto — mitä kannattaa katsoa</h2>
+    <ol>
+      <li><strong>Vesilämpötila</strong> 4–10 °C, mieluiten omalla mittauksella rannalta.</li>
+      <li><strong>Lämpenevä trendi</strong> 7 vrk:n yli; jyrkkä kylmeneminen on hälyttävä.</li>
+      <li><strong>Tuulen suunta</strong> S/SW/W, vältä N/NE.</li>
+      <li><strong>Tuulen voimakkuus</strong> 2–6 m/s.</li>
+      <li><strong>Paineen muutos</strong> 3–8 hPa / 24 h.</li>
+      <li><strong>Edellisten 48 h sateet</strong> alle 8 mm.</li>
+      <li><strong>Pilvisyys</strong> alle 80 %, mieluiten 10–60 %.</li>
+      <li><strong>Kellonaika</strong> 10–12 tai 17–19.</li>
+    </ol>
+
+    <p style="font-size:12px;color:#64748b;margin-top:24px">
+      Yksityiskohtaiset kaavat ja painokertoimet löytyvät viereiseltä
+      <em>Algoritmin spesifikaatio</em> -välilehdeltä (englanniksi).
+      Lähteet ja laajempi tausta:
+      <code>docs/research.md</code> (FI) ja <code>docs/methodology.md</code> (EN).
+    </p>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 2: English methodology spec                                        -->
+  <!-- ===================================================================== -->
+  <section class="tab-panel article" id="panel-algoritmi" role="tabpanel">
+
+    <p style="background:#f0f4f8;padding:8px 14px;border-radius:6px;font-size:12px;color:#475569">
+      <strong>Note (EN):</strong> this tab is the implementation spec for
+      developers. It is the single source of truth for the math used in
+      <code>scoring.js</code>. The angler-facing summary is on the previous tab
+      (in Finnish).
+    </p>
+
+    <h2>High-level formula</h2>
+    <pre>finalScore = clamp(round(baseScore × Π penaltyMultipliers), 0, 100)</pre>
+    <p>
+      where <code>baseScore</code> is a weighted average of 11 factor scores
+      (each 0–100) and <code>penaltyMultipliers</code> are zero or more
+      critical-condition multipliers (each ≤ 1).
+    </p>
+
+    <h2>Why weighted average × multipliers</h2>
+    <p>
+      A pure weighted average can't capture <strong>veto conditions</strong> —
+      situations where a single factor (e.g. water below 4 °C, or +20 °C summer
+      water) effectively shuts down the fishery regardless of everything else.
+      A pure rule-based system can't capture <strong>gradual interactions</strong>
+      between many small factors. The hybrid: weighted average of gradient
+      factors, then hard penalty multipliers for the few biological vetoes.
+    </p>
+
+    <h2>The 11 factors and their weights</h2>
+    <table>
+      <thead><tr><th>Key</th><th>Factor</th><th>Weight</th><th>Critical</th></tr></thead>
+      <tbody>
+        <tr><td><code>wt</code></td><td>Water temperature</td><td>20</td><td>✓</td></tr>
+        <tr><td><code>wtrend</code></td><td>Water-temp trend (7-day Δ)</td><td>10</td><td>✓</td></tr>
+        <tr><td><code>p24</code></td><td>Pressure change 24h (|ΔhPa|)</td><td>12</td><td></td></tr>
+        <tr><td><code>p48</code></td><td>Pressure change 48h (|ΔhPa|)</td><td>6</td><td></td></tr>
+        <tr><td><code>ws</code></td><td>Wind speed (max km/h)</td><td>10</td><td></td></tr>
+        <tr><td><code>wd</code></td><td>Wind direction (Saaronniemi-relative)</td><td>10</td><td></td></tr>
+        <tr><td><code>r24</code></td><td>Precipitation 24h</td><td>6</td><td></td></tr>
+        <tr><td><code>r48</code></td><td>Precipitation prior 48h</td><td>6</td><td></td></tr>
+        <tr><td><code>cc</code></td><td>Cloud cover (mean)</td><td>6</td><td></td></tr>
+        <tr><td><code>at</code></td><td>Air temperature (max)</td><td>4</td><td></td></tr>
+        <tr><td><code>att</code></td><td>Air-temp trend (48h Δ)</td><td>10</td><td></td></tr>
+        <tr><td colspan="2"><strong>Total</strong></td><td><strong>100</strong></td><td></td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>baseScore = Σ(score × weight) / 100</code>
+    </p>
+
+    <h2>Generic shape: <code>triangular(v, hardLo, optLo, optHi, hardHi)</code></h2>
+    <pre>v ≤ hardLo                  → 0
+v ≥ hardHi                  → 0
+optLo ≤ v ≤ optHi           → 100
+hardLo &lt; v &lt; optLo          → linear ramp 0 → 100
+optHi &lt; v &lt; hardHi          → linear ramp 100 → 0</pre>
+
+    <h2>Per-factor formulas</h2>
+
+    <h3>scoreWaterTemp(t) — weight 20</h3>
+    <p><code>triangular(t, 2, 6, 10, 14)</code>. Optimum 6–10 °C, hard bounds 2 and 14.</p>
+
+    <h3>scoreWaterTrend(dt) — weight 10</h3>
+    <table>
+      <thead><tr><th>Δ over 7 days</th><th>Score</th></tr></thead>
+      <tbody>
+        <tr><td>+1 to +4 °C (warming)</td><td>100</td></tr>
+        <tr><td>0 to +1 °C (drift up)</td><td>80</td></tr>
+        <tr><td>&gt; +4 °C (very fast warming)</td><td>70</td></tr>
+        <tr><td>0 to −1 °C (slow cooling)</td><td>65</td></tr>
+        <tr><td>−1 to −2 °C</td><td>35</td></tr>
+        <tr><td>−2 to −3 °C</td><td>15</td></tr>
+        <tr><td>&lt; −3 °C (crash)</td><td>5</td></tr>
+      </tbody>
+    </table>
+    <p>Sudden cooling in spring tells fish to leave the shallow shore for the deeper, more thermally stable column.</p>
+
+    <h3>scorePressureChange(dp) — weights 12 (24h) and 6 (48h)</h3>
+    <p>
+      <code>triangular(|dp|, 0, 3, 8, 15)</code>. Reward 3–8 hPa/24h; penalize
+      stagnant pressure (|Δp|&lt;3) and extreme drops (|Δp|&gt;15).
+    </p>
+
+    <h3>scoreWindSpeed(kmh) — weight 10</h3>
+    <pre>ms = kmh / 3.6
+if ms &lt; 0.5  →  40   (dead calm; sight feeding still fine)
+else  →  triangular(ms, 0, 2, 6, 14)</pre>
+
+    <h3>scoreWindDir(deg) — weight 10 (Saaronniemi-specific)</h3>
+    <p>The cape opens W/SW. Best: SW (~225°) onshore. Worst: NE (~45°) offshore.</p>
+    <pre>dist = min(|deg − 225|, 360 − |deg − 225|)   // angular distance, 0–180
+score = round(100 × (1 − dist / 180))</pre>
+
+    <h3>scorePrecipToday(mm) — weight 6</h3>
+    <pre>mm &lt; 0.5   →  100
+mm &lt; 2     →  80
+mm &lt; 5     →  50
+mm &lt; 10    →  25
+mm ≥ 10    →  10</pre>
+
+    <h3>scorePrecip48h(mm) — weight 6</h3>
+    <pre>mm &lt; 2     →  100
+mm &lt; 8     →  70
+mm &lt; 20    →  40
+mm ≥ 20    →  15</pre>
+
+    <h3>scoreCloud(pct) — weight 6</h3>
+    <p>Piecewise (not triangular):</p>
+    <pre>pct ≤ 10   →  85   (clear; great in spring, harsh in summer)
+pct ≤ 60   →  100  (broken cloud sweet spot)
+pct ≤ 80   →  70
+pct ≤ 95   →  45
+pct &gt; 95   →  25   (overcast; bottom doesn't warm, polychaetes stay in)</pre>
+
+    <h3>scoreAirTemp(tmax) — weight 4</h3>
+    <p><code>triangular(tmax, -5, 6, 14, 22)</code>. Lower weight than water temp because air is a poor proxy for shore water on short timescales.</p>
+
+    <h3>scoreAirTrend(dt) — weight 10</h3>
+    <pre>dt 0 to +5    →  100 (warming)
+dt &gt; +5       →  70 (warming fast — confused fish)
+dt 0 to −2    →  70 (slight cool)
+dt −2 to −5   →  40
+dt &lt; −5       →  20 (cold shock)</pre>
+
+    <h2>Critical penalty multipliers</h2>
+    <p>Applied multiplicatively after the weighted base score. Multiple can stack.</p>
+    <table>
+      <thead><tr><th>Condition</th><th>Multiplier</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Water temp &lt; 4 °C</td><td>× 0.4</td><td>Polychaete activity halts; siika moves to deep stable water.</td></tr>
+        <tr><td>Water temp 4–5 °C</td><td>× 0.6</td><td>Cold-edge marginal — shore food chain barely active.</td></tr>
+        <tr><td>Water temp &gt; 12 °C</td><td>× 0.5</td><td>Spring whitefish window closes; roach/perch dominate the shallow shore.</td></tr>
+        <tr><td>Water trend ≤ −2.5 °C / 7d</td><td>× 0.5</td><td>Sudden cooling — fish vacate the shallows for thermal stability.</td></tr>
+        <tr><td>Water trend −1.5 to −2.5 °C / 7d</td><td>× 0.75</td><td>Cooling not catastrophic but biases against feeding.</td></tr>
+        <tr><td>WindDir score &lt; 30 AND wind &gt; 8 m/s AND water &lt; 7 °C</td><td>× 0.7</td><td>Cold offshore wind drives warm surface water out and brings cold deep water up.</td></tr>
+      </tbody>
+    </table>
+    <p>If multiple water-temp conditions match, only one fires (e.g. &lt; 4 °C does <em>not</em> also trigger 4–5 °C). Trend and direction conditions stack with temperature conditions.</p>
+
+    <h2>Future-day water-temperature projection</h2>
+    <p>Open-Meteo Marine gives a daily SST forecast, but we don't currently use it directly per future day. Instead we project from today's chosen source using a damped air-temp delta:</p>
+    <pre>projectedWater(d) = baseWater + (airAvg(d) − airAvg(today)) × 0.2 × min(daysFromToday, 5) / 5</pre>
+    <p>Capped to [1, 18] °C. This is <strong>crude</strong> and known to be a weakness — a better implementation would use the Open-Meteo Marine forecast directly per future day.</p>
+
+    <h2>Validation</h2>
+    <p>
+      One ground-truth event so far: 2026-04-24 user reports nobody catching
+      fish at Saaronniemi, water shore-measured at 4 °C (down from 6–8 °C
+      earlier weeks), wind from NW at 25 km/h. Without the water-temp +
+      offshore-wind compound, the model gave 85 (very wrong). With them, the
+      model gives 34 ("Huono"), matching reality. More catch-log data points
+      are needed for real validation.
+    </p>
+
+    <h2>Sources and bibliography</h2>
+    <ul>
+      <li><strong>Code:</strong> <code>src/scoring.js</code> — all formulas in this tab are implemented there as pure functions.</li>
+      <li><strong>Data:</strong> <code>docs/data-sources.md</code> — three APIs (Open-Meteo Weather, Open-Meteo Marine, FMI WFS).</li>
+      <li><strong>Decisions:</strong> <code>docs/decisions.md</code> — why each weight and threshold.</li>
+      <li><strong>Background research:</strong> <code>docs/research.md</code> — long-form Finnish notes that shaped the model.</li>
+    </ul>
+  </section>
+</div>
+
+<script type="module" src="research.js"></script>
+</body>
+</html>
