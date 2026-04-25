@@ -415,6 +415,91 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; color: #0a3d62; }
   border-top: 1px solid #eee;
 }
 
+/* --- Multi-species (rantakalastus) --- */
+
+.day-card .best-species {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.day-card .species-mini {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+.day-card .best-window {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+  margin-top: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.species-block {
+  border-top: 1px solid #eef2f6;
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.species-block:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.species-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.species-header .name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0a3d62;
+}
+.species-header .name .emoji {
+  margin-right: 4px;
+}
+.species-header .right {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  color: #475569;
+  flex-wrap: wrap;
+}
+.species-header .score-pill {
+  font-size: 18px;
+  font-weight: 700;
+}
+.species-header .window-pill {
+  background: #eef2f6;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 500;
+}
+.tackle-hint {
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+  margin: 4px 0 8px;
+}
+
+/* Per-species peak-hour tints in the hourly strip. */
+.hour-cell.peak-siika { background: #ffd166; }
+.hour-cell.peak-hauki { background: #f4a261; }
+.hour-cell.peak-ahven { background: #f4d35e; }
+.hour-cell.peak-kuha  { background: #b497d6; color: white; }
+
 /* --- Responsive --- */
 
 @media (max-width: 640px) {

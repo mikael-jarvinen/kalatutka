@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tiede ja perustelut · Siikasää</title>
+  <title>Tiede ja perustelut · Kalatutka</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="container">
   <nav class="site-nav">
-    <a href="index.html">Ennuste</a>
-    <a href="research.html" class="active">Tiede ja perustelut</a>
+    <a href="siika.html">Siika</a>
+    <a href="rantakalastus.html">Rantakalastus</a>
+    <a href="research.html" class="active">Tiede</a>
   </nav>
 
   <h1>Tiede ja perustelut</h1>
   <div class="subtitle">
-    Miksi siika syö silloin kun syö — ja miten ennusteen pisteet on rakennettu ·
+    Miksi kala syö silloin kun syö — ja miten ennusteen pisteet on rakennettu ·
     snapshot haettu <strong id="dataStamp">–</strong>
   </div>
 
@@ -35,14 +36,19 @@
     <p>
       Tavalliset kalakalenterit (solunar, kuun vaiheet) on kehitetty vuoroveden
       voimakkaille merialueille. <strong>Itämerellä vuorovesi on alle 20 cm</strong> —
-      se ei ohjaa siian käyttäytymistä mihinkään suuntaan. Yleiset säänäkökulmat
-      eivät taas ota huomioon Saaronniemen geometriaa eivätkä kevätsiian
-      biologiaa. Tämä työkalu yrittää korjata molemmat puutteet: pisteyttää
-      Saaronniemen olosuhteet siten kuin ne <em>oikeasti</em> vaikuttavat
-      <em>siian</em> rantasyöntiin.
+      se ei ohjaa kalojen käyttäytymistä mihinkään suuntaan. Yleiset säänäkökulmat
+      eivät taas ota huomioon paikallista geometriaa eivätkä Saaristomeren
+      kalalajien biologisia eroja. Tämä työkalu pisteyttää olosuhteet siten kuin
+      ne <em>oikeasti</em> vaikuttavat <em>kunkin lajin</em> rantasyöntiin.
+    </p>
+    <p style="font-size:13px;color:#475569">
+      Hyppää suoraan lajiin: <a href="#siika">Siika</a> · <a href="#hauki">Hauki</a> ·
+      <a href="#ahven">Ahven</a> · <a href="#kuha">Kuha</a>.
     </p>
 
-    <h2>1. Siian biologia — miksi nämä tekijät</h2>
+    <h2 id="siika">🐟 Siika</h2>
+
+    <h3>1. Siian biologia — miksi nämä tekijät</h3>
     <p>
       Eurooppalainen siika (<em>Coregonus lavaretus</em>) on opportunistinen
       yleissyöjä, mutta kevään rantakalastuksen kannalta tärkeitä piirteitä
@@ -75,7 +81,7 @@
       </li>
     </ul>
 
-    <h2>2. Vesilämpötila on tärkein muuttuja</h2>
+    <h3>2. Vesilämpötila on tärkein muuttuja</h3>
     <p>
       Tämä on kaikkien ennustettavien tekijöiden kuningas. Ei ilman lämpötila —
       <strong>veden lämpötila</strong>. Ilma on huono mittari rantaveden
@@ -109,7 +115,7 @@
       ”Oma havainto rannalla” -liukua kun on uusi mittaus.
     </p>
 
-    <h2>3. Tuulen suunta — Saaronniemen geometria</h2>
+    <h3>3. Tuulen suunta — Saaronniemen geometria</h3>
     <p>
       Saaronniemen kärki (Kolkannokka) avautuu <strong>länsi/lounaan</strong>
       suuntaan, ja avoin Saaristomeri on etelässä ja lännessä. Tämä asettaa
@@ -137,7 +143,7 @@
       mutta sight-feedingille se ei myöskään ole este.
     </p>
 
-    <h2>4. Ilmanpaine — muutos, ei taso</h2>
+    <h3>4. Ilmanpaine — muutos, ei taso</h3>
     <p>
       Kalastusperinteessä ”paine vaikuttaa kalan syöntihaluun” on yleinen
       uskomus. Biofysikaalisesti se on kuitenkin epätodennäköinen: koko
@@ -161,7 +167,7 @@
       ja 48 h (paino 6). Absoluuttinen paine ei tule mukaan lainkaan.
     </p>
 
-    <h2>5. Sade ja sameus</h2>
+    <h3>5. Sade ja sameus</h3>
     <p>
       Pienet sateet (alle 2 mm/vrk) eivät juurikaan haittaa. Rankka sade
       sameuttaa veden ja blokkaa sight-feedingin; siika ei syö.
@@ -172,7 +178,7 @@
       jäähdyttää.
     </p>
 
-    <h2>6. Pilvisyys ja valo</h2>
+    <h3>6. Pilvisyys ja valo</h3>
     <p>
       Tämä on hieman vastakkainen mitä yleensä kuvitellaan. Aurinko ei pelästytä
       siikaa, vaan päinvastoin: <strong>aurinko lämmittää pohjasedimenttiä,
@@ -187,7 +193,7 @@
       <li>&gt; 95 % → 25 (täyspilvistä; pohja ei lämpiä, madot eivät nouse)</li>
     </ul>
 
-    <h2>7. Mitä mallissa <em>ei</em> ole — tarkoituksella</h2>
+    <h3>7. Mitä mallissa <em>ei</em> ole — tarkoituksella</h3>
     <ul>
       <li>
         <strong>Solunar / kuun vaiheet.</strong> Itämerellä vuorovesi on alle
@@ -203,7 +209,7 @@
       </li>
     </ul>
 
-    <h2>8. Yhteenveto — mitä kannattaa katsoa</h2>
+    <h3>8. Yhteenveto — mitä kannattaa katsoa</h3>
     <ol>
       <li><strong>Vesilämpötila</strong> 4–10 °C, mieluiten omalla mittauksella rannalta.</li>
       <li><strong>Lämpenevä trendi</strong> 7 vrk:n yli; jyrkkä kylmeneminen on hälyttävä.</li>
@@ -215,11 +221,176 @@
       <li><strong>Kellonaika</strong> 10–12 tai 17–19.</li>
     </ol>
 
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Klassinen siikatakla on pohjaonki: 0.20 mm siima, 1–2 g paino, 10–14
+      koukku ja syöttinä elävä harvasukamato (lieru) tai kastemato. Heitä
+      paino noin 5–15 m rannasta sora–hiekkapohjalle ja anna olla. Siika syö
+      rauhallista syöttiä — älä liikuttele. Vavan herkkä kärki näyttää
+      nykäisyn; lyö ohuesti, älä riuhdo.
+    </p>
+
+    <!-- ===== HAUKI ===== -->
+
+    <h2 id="hauki">🐊 Hauki</h2>
+
+    <h3>Biologia ja kausi</h3>
+    <p>
+      Hauki (<em>Esox lucius</em>) on opportunistinen väijyssaalistaja, joka
+      pärjää vähässäkin valossa ja sameassa vedessä lateraalielimensä avulla.
+      Saaristomerellä haukikalastuksessa on <strong>kaksi piikkiä</strong>:
+      kevään kutu-jälkihuippu (~20.4.–20.5., vesi 8–14 °C) ja syksyn
+      pyyntiaika (~15.9.–1.12., vesi 8–14 °C jäähtyvänä). Kesäkuukausina
+      pintavesi on liian lämmin (>19 °C) ja iso hauki vetäytyy syvemmälle —
+      rannalta vaikea tavoittaa.
+    </p>
+
+    <h3>Mikä ratkaisee haukikelin</h3>
+    <ul>
+      <li>
+        <strong>Pilvisyys ja hämärä.</strong> Kirkas keskipäivä + tyyni vesi
+        on kirkasvetisen Saaristomeren huonoin haukikeli. Pilvinen
+        päivä, sade tai aamu/ilta-hämärä = hauki uskaltautuu rannan
+        läheisyyteen. Pisteytysmalli antaa pilvisyydelle suuren painon (15)
+        ja hämärä/yöauringonnoususuunnalle iso bonus.
+      </li>
+      <li>
+        <strong>Tuuli ja sen suunta.</strong> Onshore-tuuli (S/SW/W) puhaltaa
+        syöttikalat (särki, salakka, silakka) rannalle. Hauki seuraa.
+        Optimi 4–8 m/s; tyyntä ei kannata.
+      </li>
+      <li>
+        <strong>Painetrendi.</strong> Hauen kohdalla muutosnopeus ratkaisee
+        vielä siikaakin enemmän — laskeva paine ennen rintamaa antaa lisäbonuksen.
+      </li>
+      <li>
+        <strong>Vesilämpö.</strong> Optimi 12–18 °C. Alle 4 °C ja yli 23 °C
+        ovat kovan rangaistuksen alueita. Lämpötilatrendiä painotetaan
+        vähemmän kuin siialla — hauki sopeutuu nopeammin.
+      </li>
+    </ul>
+
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Kevätkauden jälkihaut: 10–18 cm jerkbait (Westin Swim, Strike Pro
+      Buster) tai softi 4–6" 14–28 g jighead. Heitä matalille kasvustoille
+      ja vedä hidas pulse–pause. Syksyllä (loka–marras) isompi kalkkari ja
+      syvempi vaappu (Rapala Down Deep, Husky Jerk). Kovassa tuulessa
+      raskaammat jigit pitävät vedessä. <strong>Tärkeintä: hämärä, sade tai
+      pilvi — vältä kirkas keskipäivä.</strong>
+    </p>
+
+    <!-- ===== AHVEN ===== -->
+
+    <h2 id="ahven">🐠 Ahven</h2>
+
+    <h3>Biologia ja kausi</h3>
+    <p>
+      Ahven (<em>Perca fluviatilis</em>) on parveissa ruokaileva päiväaktiivinen
+      näköaistisaalistaja. Saaristomerellä laaja kausi
+      <strong>huhtikuun puolivälistä marraskuun loppuun</strong>:
+      huhti–toukokuussa kutuparvet rannoilla (vesi 7–12 °C), kesä–elokuussa
+      tuotantoaika (vesi 14–22 °C, paljon pieniä kaloja), syyskuusta
+      marraskuun puoleenväliin <strong>kilon ahvenen pyyntiaika</strong>.
+    </p>
+
+    <h3>Mikä ratkaisee ahvenkelin</h3>
+    <ul>
+      <li>
+        <strong>Vesilämpö 14–19 °C optimi.</strong> Lämpötrendi keväällä
+        merkittävä — nouseva trendi käynnistää parvet matalille rannoille.
+      </li>
+      <li>
+        <strong>Kevyt onshore-tuuli (2–6 m/s).</strong> Kova tuuli (>8 m/s)
+        rikkoo parvet. Ahven kestää tyyntä paremmin kuin hauki — kirkkaina
+        kesäpäivinä syö silti parven keskellä.
+      </li>
+      <li>
+        <strong>Vuorokaudenaika.</strong> Päiväaktiivinen — aamupäivä
+        09–12 ja iltapäivä 15–19. Aamu/ilta-hämärä eivät ahvenelle yhtä
+        merkittäviä kuin hauelle ja kuhalle.
+      </li>
+      <li>
+        <strong>Pilvisyys.</strong> Puolipilvinen (30–70 %) yleensä paras;
+        kesän kirkas aurinko ajaa parvet syvemmälle, talven täyspilvi
+        passivoi.
+      </li>
+    </ul>
+
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Aktiivisin: 5–10 cm softi (Berkley Powerbait, Savage Gear) 3–7 g
+      jigheadissa. Hidas hyppely pohjassa parven yläpuolella. Pinnasta
+      tunnistaa parven liikkeen vedessä; heitä parven läpi. Suuremmille
+      "kilon ahvenille" syksyllä: 8–12 cm shadi 14–18 g, syvemmiltä
+      pudotuksilta. Madeonki kelluvalla tai paino+koukku kombossa lapsille
+      ja rauhallisille hetkille.
+    </p>
+
+    <!-- ===== KUHA ===== -->
+
+    <h2 id="kuha">🌙 Kuha</h2>
+
+    <h3>Biologia ja kausi</h3>
+    <p>
+      Kuha (<em>Sander lucioperca</em>) on Saaristomeren <strong>lämpimimmän
+      veden petokala</strong>. Optimi 18–22 °C — eli kuhan kausi alkaa kun
+      siian kausi loppuu. Suolaisen veden kuhakanta on pohjoisia järviä
+      liikkuvaisempi: seuraa syöttikaloja (silakka, kuore) sisäsaaristoon
+      kesällä ja ulompiin selkiin syksyllä.
+    </p>
+    <p>
+      <strong>Kuha on rauhoitettu suolaisessa vedessä 1.4.–31.5.</strong>
+      Käytännön rantakausi: <strong>kesäkuun puolivälistä lokakuulle</strong>,
+      huippu heinä–elokuussa.
+    </p>
+
+    <h3>Mikä ratkaisee kuhakelin</h3>
+    <ul>
+      <li>
+        <strong>Hämärä, ilta ja yö ratkaisevat.</strong> Kuhalla on
+        silmissä <em>tapetum lucidum</em> (heijastava kerros), ja se
+        näkee hämärässä saalistaan paremmin kuin saalis sitä. Kirkas
+        keskipäivä on kuhan huonoin tunti; auringonlasku ja sen jälkeinen
+        yöhetki on paras. Pisteytysmalli painottaa vuorokaudenaikaa
+        kuhalla erittäin korkeasti (17 / 100).
+      </li>
+      <li>
+        <strong>"Kuhakeli" — pilvistä, hieman tuulta, sade.</strong> Tämä
+        kalastusperinteen sääntö pitää myös tutkimuksessa: matala valo +
+        sekoitettu vesi + lievä sameus on kuhan kotipiiri. Pilvisyydelle
+        18 painopistettä.
+      </li>
+      <li>
+        <strong>Vesi 18–22 °C optimi.</strong> Alle 10 °C kuha vetäytyy
+        syville selille — rannalta ei tavoita (×0.3 rangaistus). Yli 24 °C
+        siirtyy täysin yöruokintaan.
+      </li>
+      <li>
+        <strong>Sateet ovat OK.</strong> Toisin kuin siialle, kohtalainen
+        sade (1–10 mm) on kuhalle <em>positiivinen</em> tekijä — sumentaa
+        vettä juuri sopivasti.
+      </li>
+    </ul>
+
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Pääase: 4–5" shad/curl-tail (Sandeel Slim, Manns Stretch) 7–14 g
+      jighead, vedä hitaasti pohjaa pitkin tai tee 1–2 nytkäystä, sitten
+      pause. Iltahämärässä ja yöllä: suspending jerkbait (Rapala Husky
+      Jerk Deep, X-Rap Magnum) hidaspaussilla. Kuhalle myös syöttikala
+      (silakka, kuore) pohjaongella. Toimii parhaiten 21:00–02:00
+      kesäaikaan, syksyllä jo iltapäivästä. <strong>Muista 42 cm
+      vähimmäismitta suolaisessa vedessä.</strong>
+    </p>
+
     <p style="font-size:12px;color:#64748b;margin-top:24px">
       Yksityiskohtaiset kaavat ja painokertoimet löytyvät viereiseltä
       <em>Algoritmin spesifikaatio</em> -välilehdeltä (englanniksi).
       Lähteet ja laajempi tausta:
-      <code>docs/research.md</code> (FI) ja <code>docs/methodology.md</code> (EN).
+      <code>docs/research.md</code> (siika, FI),
+      <code>docs/research-rantakalastus.md</code> (hauki/ahven/kuha, FI) ja
+      <code>docs/methodology.md</code> (EN).
     </p>
   </section>
 
@@ -253,7 +424,15 @@
       factors, then hard penalty multipliers for the few biological vetoes.
     </p>
 
-    <h2>The 11 factors and their weights</h2>
+    <h2>Per-species weight tables</h2>
+    <p>
+      Each species has its own weight vector (sums to 100). The siika model is
+      below; rantakalastus species (hauki/ahven/kuha) are after. All species
+      share the same input vector — only weights, thresholds, and a few
+      shape functions differ. <code>baseScore = Σ(score × weight) / 100</code>.
+    </p>
+
+    <h3>Siika</h3>
     <table>
       <thead><tr><th>Key</th><th>Factor</th><th>Weight</th><th>Critical</th></tr></thead>
       <tbody>
@@ -271,8 +450,39 @@
         <tr><td colspan="2"><strong>Total</strong></td><td><strong>100</strong></td><td></td></tr>
       </tbody>
     </table>
+
+    <h3>Rantakalastus species (hauki / ahven / kuha)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Factor</th>
+          <th>Hauki</th>
+          <th>Ahven</th>
+          <th>Kuha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Water temp</td><td>22</td><td>25</td><td>22</td></tr>
+        <tr><td>Water-temp trend</td><td>5</td><td>8</td><td>5</td></tr>
+        <tr><td>Pressure 24h</td><td>13 (falling-pressure bonus)</td><td>8</td><td>7</td></tr>
+        <tr><td>Pressure 48h</td><td>5</td><td>4</td><td>3</td></tr>
+        <tr><td>Wind speed</td><td>15</td><td>10</td><td>10</td></tr>
+        <tr><td>Wind direction (generic onshore)</td><td>10</td><td>5</td><td>5</td></tr>
+        <tr><td>Precip 24h</td><td>3 (rain-tolerant)</td><td>5</td><td>4 (positive at low mm)</td></tr>
+        <tr><td>Precip 48h</td><td>2</td><td>5</td><td>4</td></tr>
+        <tr><td>Cloud cover (overcast favoured)</td><td>15</td><td>12 (partly best)</td><td>18 (low-light favoured)</td></tr>
+        <tr><td>Air temp</td><td>2</td><td>4</td><td>2</td></tr>
+        <tr><td>Air-temp trend</td><td>3</td><td>4</td><td>3</td></tr>
+        <tr><td>Time-of-day</td><td>5</td><td>10</td><td>17 ✓</td></tr>
+        <tr><td colspan="3"><strong>Total</strong></td><td><strong>100</strong></td></tr>
+      </tbody>
+    </table>
     <p>
-      <code>baseScore = Σ(score × weight) / 100</code>
+      Each species also has a <strong>season-window multiplier</strong> applied
+      before penalties: hauki (winter ×0.2, summer-water ×0.5), ahven (deep
+      winter ×0.2–0.5), kuha (closed Apr–May ×0, peak Jun 25 – Sep 30 ×1.0,
+      tail Oct ×0.6, off in winter ×0.1). And per-species critical penalties
+      mirroring siika's shape but with species-specific thresholds.
     </p>
 
     <h2>Generic shape: <code>triangular(v, hardLo, optLo, optHi, hardHi)</code></h2>
@@ -363,6 +573,23 @@ dt &lt; −5       →  20 (cold shock)</pre>
       </tbody>
     </table>
     <p>If multiple water-temp conditions match, only one fires (e.g. &lt; 4 °C does <em>not</em> also trigger 4–5 °C). Trend and direction conditions stack with temperature conditions.</p>
+
+    <h2>Hourly time-of-day factor (multi-species)</h2>
+    <p>
+      For the rantakalastus page each species also has a per-hour score
+      surfaced as the "Paras tunti" (best 2-hour window). It blends the
+      daily score with a time-of-day multiplier:
+    </p>
+    <pre>hourlyScore = dailyScore × (0.4 + 0.6 × scoreTimeOfDay(species, hour) / 100)</pre>
+    <p>
+      The time-of-day score is 100 at the species' peak hours (siika 10–12
+      and 17–19; ahven 09–12 and 15–19; hauki and kuha at sunrise/sunset
+      ±1.5 h), with kuha additionally rewarding nautical twilight + night
+      and suppressing solar noon ±2 h on clear days. Sunrise/sunset are
+      computed from a sinusoidal declination approximation at 60.4°N. The
+      best 2-hour window is found by sliding a 2-hour mean across all 24
+      hours of the day.
+    </p>
 
     <h2>Future-day water-temperature projection</h2>
     <p>Open-Meteo Marine gives a daily SST forecast, but we don't currently use it directly per future day. Instead we project from today's chosen source using a damped air-temp delta:</p>

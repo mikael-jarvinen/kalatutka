@@ -129,9 +129,51 @@ Domain-specific Finnish nouns (`siika`, `harvasukamato`) are kept where they're 
 
 ---
 
+## D9. Multi-species: separate scoring functions per species, not config-driven
+
+**Decision:** Phase 2 introduces three new species (hauki, ahven, kuha) alongside siika. Each has its own scoring function (`scoreHauki`, `scoreAhven`, `scoreKuha`) sharing the per-factor scorers (`triangular`, `scoreCloud*`, etc.) but composed manually rather than via a generic `SPECIES_CONFIG`-driven dispatcher.
+
+**Rationale:** A config-driven approach (factor table per species, single composed scorer that iterates) is more elegant in theory but requires extracting every factor's reason text, value formatting, and edge-case shape into a config. In practice, each species has enough quirks (kuha has reversed precipitation polarity, hauki has a falling-pressure bonus, ahven has seasonal cloud preferences) that the "shared parameterised dispatcher" balloons in complexity. Three readable parallel functions of ~120 lines each is easier to maintain and tune than one 200-line config-driven function. The duplication is acceptable because the species' Finnish reason strings are intentionally bespoke.
+
+**Trade-off:** If a 5th species is added the duplication starts to hurt; revisit then. The `siika` scoring path is unchanged (back-compat verified by snapshot diff).
+
+---
+
+## D10. Drop Saaronniemi-specific wind direction for rantakalastus species
+
+**Decision:** Hauki, ahven, and kuha use a generic onshore wind-direction scorer (180–270° = best, 0–90° = worst) rather than siika's 225°-peaked Saaronniemi-specific function.
+
+**Rationale:** Pike concentrate in inner bays (different shore geometry from the SW-facing Saaronniemi cape). Kuha favour channel mouths and harbour areas (Pansio, Hirvensalo east shore — completely different cape orientations). Forcing the Saaronniemi cape model on these species would penalise legitimate fishing spots. The generic onshore preference is an honest middle ground that works for any open-Baltic shore in the Turku region.
+
+**Future:** Per-spot wind calibration (with a location picker) is the natural follow-up if the user fishes named spots and wants per-spot accuracy.
+
+---
+
+## D11. Daily-resolution scoring with a separate hourly window indicator
+
+**Decision:** All four species are scored at **daily resolution** in the day grid. The detail panel additionally shows a per-species **best 2-hour window** computed by blending the daily score with a time-of-day multiplier. We do not score every condition factor at hourly resolution.
+
+**Rationale:** Open-Meteo provides hourly weather, so a fully hourly scoring is technically possible. But:
+1. Most factors are inherently daily (water temp, water-temp trend, 24/48h pressure deltas, season gate). Re-deriving these at hourly resolution adds complexity without information.
+2. The user's question is usually "should I go fishing today?" — answered by the daily score. The follow-up "when in the day?" — answered by the best-window indicator.
+3. The "best window" already captures the time-of-day signal that matters most: kuha's night bias, hauki's dawn/dusk, siika's mid-day peaks.
+
+**Trade-off:** The hourly window's accuracy is bounded by the daily score's accuracy. If a clear-pressure-stable day rates low daily, kuha's "fish at night" wisdom still gets dampened. Acceptable for now; if catch reports suggest the model misses kuha nights, revisit.
+
+---
+
+## D12. No catch log in Phase 2
+
+**Decision:** Phase 2 ships forecast for three new species without a catch log.
+
+**Rationale:** User explicitly excluded it. The static-site + cron-refresh architecture works for read-only forecasts; a catch log requires a write-path (backend or IndexedDB), which is a substantial scope expansion. Defer until the user's actual fishing data shows the model needs validation.
+
+---
+
 ## Open decisions / TODOs
 
 - Choice of test runner (vitest vs node --test vs ...) — not yet decided.
 - Whether to add a backend or stay static — depends on whether catch log lives in the cloud.
 - Multi-location support (Uutela, Lauttasaari, etc.) — would require per-location wind-direction calibration.
-- Hourly vs daily scoring — currently daily; user might want hourly for tactical "should I go now" decisions.
+- Catch log persistence — IndexedDB vs small backend service.
+- Per-species fully-hourly scoring (not just window) — only worth doing if catch reports show the daily-baseline + window approach misses real signals.

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rantakalastus — Turun seutu</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <nav class="site-nav">
+    <a href="siika.html">Siika</a>
+    <a href="rantakalastus.html" class="active">Rantakalastus</a>
+    <a href="research.html">Tiede</a>
+  </nav>
+
+  <h1>Rantakalastus — Turun seutu</h1>
+  <div class="subtitle">Hauki, ahven ja kuha · paras laji päivittäin</div>
+
+  <div class="status-bar">
+    <span>
+      <span class="badge">Open-Meteo + FMI</span>
+      Automaattisesti päivitetty · haettu <strong id="dataStamp">–</strong>
+    </span>
+  </div>
+
+  <div class="data-sources">
+    <h3>🌊 Vesilämpötila — valitse lähde</h3>
+    <div class="row">
+      <div class="source-card" id="src-marine" data-source="marine">
+        <div class="name">
+          Open-Meteo Marine<br>
+          <span style="font-weight:400;color:#64748b">Avovesimalli (Saaristomeri)</span>
+        </div>
+        <div class="value" id="marine-temp">–</div>
+        <div class="trend" id="marine-trend">–</div>
+      </div>
+      <div class="source-card" id="src-foglo" data-source="foglo">
+        <div class="name">
+          FMI Föglö Degerby<br>
+          <span style="font-weight:400;color:#64748b">Rannikkomittaus (~50 km SW)</span>
+        </div>
+        <div class="value" id="foglo-temp">–</div>
+        <div class="trend" id="foglo-trend">–</div>
+      </div>
+      <div class="source-card" id="src-override" data-source="override">
+        <div class="name">
+          Oma havainto rannalla<br>
+          <span style="font-weight:400;color:#64748b">Mittaus rannalta (suositus)</span>
+        </div>
+        <div class="value" id="override-val">–</div>
+        <div class="trend" id="override-trend">–</div>
+      </div>
+    </div>
+
+    <div class="override-section">
+      <div class="override-row">
+        <label for="overrideRange">Oma mittaus:</label>
+        <input type="range" id="overrideRange" min="0" max="25" step="0.5" value="10">
+        <input type="number" id="overrideNum" min="0" max="30" step="0.5" value="10">
+        <span class="value-badge" id="overrideBadge">–</span>
+        <label for="trendRange" style="margin-left:12px">Trendi 7 vrk:</label>
+        <input type="range" id="trendRange" min="-6" max="6" step="0.5" value="1" style="max-width:140px">
+        <span class="value-badge" id="trendBadge" style="min-width:64px">–</span>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:#64748b;margin-top:10px">
+      Aktiivinen: <strong id="activeSource">–</strong>.
+      Hauki, ahven ja kuha kestävät lämpimämpää vettä kuin siika; rantakalastus
+      jatkuu pitkälle syksyyn. Oma rantamittaus on aina luotettavin.
+    </div>
+  </div>
+
+  <div class="days-grid" id="daysGrid"></div>
+
+  <div class="legend" style="margin-bottom:12px">
+    <span><span class="swatch" style="background:#2a9d8f"></span>80–100 erinomainen</span>
+    <span><span class="swatch" style="background:#8ab17d"></span>60–79 hyvä</span>
+    <span><span class="swatch" style="background:#e9c46a"></span>40–59 keskinkertainen</span>
+    <span><span class="swatch" style="background:#e76f51"></span>20–39 huono</span>
+    <span><span class="swatch" style="background:#9d0208"></span>0–19 surkea</span>
+  </div>
+
+  <div id="detailContainer"></div>
+
+  <div class="meta-footer">
+    <strong>Menetelmä:</strong>
+    Kullekin lajille (hauki, ahven, kuha) lasketaan oma päiväkohtainen
+    pisteytys 11 painotetulla tekijällä + lajikohtaiset kerroinrangaistukset.
+    Päivän kortilla näkyy paras laji + alipisteet muille. Yksityiskohdat:
+    <a href="research.html">Tiede</a>.<br>
+    <strong>Vuorokaudenaika:</strong> Kullakin lajilla on omat parhaat tunnit
+    (siika 10–12/17–19, hauki hämärä, ahven päivä, kuha ilta + yö).
+    Yksityiskohdat tunneittain päivän alapaneelissa.<br>
+    <strong>Tuulensuunta:</strong> Yleinen onshore-painotus (S/SW/W);
+    rantakalastus tehdään monessa paikassa, ei vain Saaronniemen kärjessä.<br>
+    <strong>Lähteet:</strong> Open-Meteo Weather &amp; Marine API, FMI Open Data
+    (mareografiasema 134252 Föglö Degerby).
+  </div>
+</div>
+
+<script type="module" src="rantakalastus.js"></script>
+</body>
+</html>

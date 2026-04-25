@@ -2,13 +2,15 @@
 
 This document is the **single source of truth** for how the fishing score is computed. If you change the math, update this document in the same commit.
 
+The model now covers **four species**: siika (whitefish), hauki (pike), ahven (perch), and kuha (zander). Each species shares the same input vector (Open-Meteo + FMI Föglö) and per-factor scorer shapes, but has its own weight vector, water-temperature triangular bounds, season-window gate, peak-hour profile, and critical penalties. The siika section below is the canonical, fully-documented model. The rantakalastus species (hauki/ahven/kuha) are summarised in the **Multi-species** section near the end; full per-species rationale is in `docs/research-rantakalastus.md`.
+
 ## High-level formula
 
 ```
-finalScore = clamp(round(baseScore × Π penaltyMultipliers), 0, 100)
+finalScore = clamp(round(baseScore × seasonGate × Π penaltyMultipliers), 0, 100)
 ```
 
-where `baseScore` is a weighted average of 11 factor scores (each 0–100) and `penaltyMultipliers` are zero or more critical-condition multipliers (each ≤ 1).
+For siika, `seasonGate = 1` (no calendar gate — the water-temp penalties already cover the spring window). For hauki/ahven/kuha, the season gate is a date-based 0–1 multiplier handling closed seasons and out-of-season periods. `baseScore` is the weighted average of 11 (siika) or 12 (rantakalastus, with an added `tod` time-of-day factor) factor scores. `penaltyMultipliers` are zero or more critical-condition multipliers (each ≤ 1).
 
 ## Why weighted average × multipliers (and not just one or the other)
 
@@ -193,3 +195,87 @@ This is **crude** and known to be a weakness. A better implementation would use 
 The model has been validated against one ground-truth event so far: 2026-04-24 user reports nobody catching fish at Saaronniemi, water shore-measured at 4 °C (down from 6–8 °C earlier weeks), wind from NW at 25 km/h. Without the water-temp + offshore-wind compound, the model gave 85 (very wrong). With them, the model gives 34 ("Huono"), matching reality.
 
 More catch-log data points would be needed for real validation.
+
+---
+
+## Multi-species (hauki / ahven / kuha)
+
+The rantakalastus species share the same input vector and per-factor shapes
+as siika but with their own weights, water-temp triangular bounds, season
+gates, and a couple of bespoke scorer shapes (overcast-preferring cloud
+scorer, kuha-positive precipitation, falling-pressure bonus for hauki).
+For per-species biological rationale, see `docs/research-rantakalastus.md`.
+
+### Per-species weights (sum to 100)
+
+| Factor | Hauki | Ahven | Kuha |
+|---|---:|---:|---:|
+| Water temp | 22 | 25 | 22 |
+| Water-temp trend | 5 | 8 | 5 |
+| Pressure 24h | 13* | 8 | 7 |
+| Pressure 48h | 5 | 4 | 3 |
+| Wind speed | 15 | 10 | 10 |
+| Wind direction (generic onshore) | 10 | 5 | 5 |
+| Precip 24h | 3 | 5 | 4† |
+| Precip 48h | 2 | 5 | 4 |
+| Cloud cover | 15‡ | 12 | 18§ |
+| Air temp | 2 | 4 | 2 |
+| Air-temp trend | 3 | 4 | 3 |
+| Time-of-day (`tod`) | 5 | 10 | 17 |
+| **Total** | **100** | **100** | **100** |
+
+\* Hauki gets a +10 bonus on the 24h pressure score when pressure is **falling** within the 3–8 hPa optimum (the "before the storm" effect).
+\† Kuha precipitation polarity is reversed: light–moderate rain is mildly **positive** (turbidity).
+\‡ Hauki cloud scorer rewards overcast (≥70 %) at 100, clear (<20 %) at 30 — opposite of siika.
+\§ Kuha cloud scorer is the steepest low-light preference: clear day = 20.
+
+### Water-temperature triangulars
+
+| Species | hardLo | optLo | optHi | hardHi |
+|---|---:|---:|---:|---:|
+| Siika | 2 | 6 | 10 | 14 |
+| Hauki | 4 | 12 | 18 | 23 |
+| Ahven | 6 | 14 | 19 | 24 |
+| Kuha | 10 | 18 | 22 | 25 |
+
+### Season gates (returned as a 0–1 multiplier, applied before penalties)
+
+- **Hauki**: months 1–3 → 0.2; if `projectedWater > 19 °C` → 0.5; otherwise 1.
+- **Ahven**: months 1–2 → 0.2; months 3 + 12 → 0.5; otherwise 1.
+- **Kuha**: months 4–5 → **0** (closed season in Finnish saltwater); month 6 day <15 → 0.2, day 15–24 → 0.6; months 7–9 → 1; month 10 → 0.6; months 11, 12, 1–3 → 0.1.
+
+### Critical penalties (per species, multiplicative)
+
+- **Hauki**: water `<4 °C` ×0.4; water `>23 °C` ×0.4; trend `≤ −2.5 °C/7d` ×0.7.
+- **Ahven**: water `<6 °C` ×0.5; water `>23 °C` ×0.5; trend `≤ −2.5 °C/7d` ×0.7.
+- **Kuha**: water `<10 °C` ×0.3; water `>24 °C` ×0.5; trend `≤ −2.5 °C/7d` ×0.6.
+
+### Hourly time-of-day factor
+
+The rantakalastus page surfaces a per-species "best 2-hour window" for each
+day. The hourly score is computed as:
+
+```
+hourlyScore = dailyScore × (0.4 + 0.6 × scoreTimeOfDay(species, hour) / 100)
+```
+
+`scoreTimeOfDay` is 100 at the species' peak hours and ramps down outside:
+
+| Species | Peak hours |
+|---|---|
+| Siika | 10, 11, 17, 18 |
+| Hauki | sunrise ± 90 min, sunset ± 90 min |
+| Ahven | 9, 10, 11, 15, 16, 17, 18 |
+| Kuha | sunset ± 90 min, sunrise ± 90 min, **full nautical twilight + night** |
+
+For kuha, solar-noon ±2 h is additionally suppressed (max 40), reflecting
+the "kuhakeli" preference for low light. Sunrise/sunset are computed from
+a sinusoidal declination approximation at 60.4°N. The best 2-hour window
+slides across all 24 hours and picks the highest-mean span.
+
+### Generic onshore wind direction (rantakalastus)
+
+Unlike siika (Saaronniemi-specific 225° peak), the rantakalastus species
+use a wider onshore band: best 180–270° (S/SW/W), worst at 0–45°
+(N/NE). Same `Math.round(100 × (1 − dist / 180))` shape, just a wider
+optimum.
