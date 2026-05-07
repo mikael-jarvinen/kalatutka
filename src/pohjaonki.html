@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rantakalastus — Turun seutu</title>
+  <title>Pohjaonki — Turun seutu</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="container">
   <nav class="site-nav">
     <a href="siika.html">Siika</a>
-    <a href="pohjaonki.html">Pohjaonki</a>
-    <a href="rantakalastus.html" class="active">Rantakalastus</a>
+    <a href="pohjaonki.html" class="active">Pohjaonki</a>
+    <a href="rantakalastus.html">Rantakalastus</a>
     <a href="research.html">Tiede</a>
   </nav>
 
-  <h1>Rantakalastus — Turun seutu</h1>
-  <div class="subtitle">Hauki, ahven ja kuha · paras laji päivittäin</div>
+  <h1>Pohjaonki — Turun seutu</h1>
+  <div class="subtitle">Särki ja lahna · paras laji päivittäin</div>
 
   <div class="status-bar">
     <span>
@@ -57,8 +57,8 @@
     <div class="override-section">
       <div class="override-row">
         <label for="overrideRange">Oma mittaus:</label>
-        <input type="range" id="overrideRange" min="0" max="25" step="0.5" value="10">
-        <input type="number" id="overrideNum" min="0" max="30" step="0.5" value="10">
+        <input type="range" id="overrideRange" min="5" max="25" step="0.5" value="14">
+        <input type="number" id="overrideNum" min="0" max="30" step="0.5" value="14">
         <span class="value-badge" id="overrideBadge">–</span>
         <label for="trendRange" style="margin-left:12px">Trendi 7 vrk:</label>
         <input type="range" id="trendRange" min="-6" max="6" step="0.5" value="1" style="max-width:140px">
@@ -68,8 +68,10 @@
 
     <div style="font-size:11px;color:#64748b;margin-top:10px">
       Aktiivinen: <strong id="activeSource">–</strong>.
-      Hauki, ahven ja kuha kestävät lämpimämpää vettä kuin siika; rantakalastus
-      jatkuu pitkälle syksyyn. Oma rantamittaus on aina luotettavin.
+      Lahna avautuu kunnolla vasta kun rantavesi nousee yli 15 °C
+      (tyypillisesti touko–kesäkuun vaihteessa).
+      <strong>Saaronniemen kärki on huonoa lahnavettä</strong> — mene Pansion
+      lahdelle, Aurajoen suulle tai Ruissalon sisälahdille.
     </div>
   </div>
 
@@ -87,20 +89,23 @@
 
   <div class="meta-footer">
     <strong>Menetelmä:</strong>
-    Kullekin lajille (hauki, ahven, kuha) lasketaan oma päiväkohtainen
-    pisteytys 11 painotetulla tekijällä + lajikohtaiset kerroinrangaistukset.
-    Päivän kortilla näkyy paras laji + alipisteet muille. Yksityiskohdat:
-    <a href="research.html">Tiede</a>.<br>
-    <strong>Vuorokaudenaika:</strong> Kullakin lajilla on omat parhaat tunnit
-    (siika 10–12/17–19, hauki hämärä, ahven päivä, kuha ilta + yö).
-    Yksityiskohdat tunneittain päivän alapaneelissa.<br>
-    <strong>Tuulensuunta:</strong> Yleinen onshore-painotus (S/SW/W);
-    rantakalastus tehdään monessa paikassa, ei vain Saaronniemen kärjessä.<br>
+    Särki ja lahna ovat lämpimän veden pohjasyöjiä jotka korvaavat siian
+    kun rantakausi vaihtuu. Kullekin lajille lasketaan oma pisteytys.
+    Yksityiskohdat: <a href="research.html#sarki">Särki</a> ·
+    <a href="research.html#lahna">Lahna</a>.<br>
+    <strong>Lahnan kausi avautuu kun vesi ylittää 15 °C</strong> — sen alle
+    lahna on syvällä eikä ole rannalta saatavissa. Särki aktivoituu jo
+    aiemmin (8 °C vedessä) mutta huippu on 14 °C+ vedessä.<br>
+    <strong>Vuorokaudenaika:</strong> Särki päiväaikaan (09–12 ja 17–20),
+    lahna iltahämärässä ja yön ensimmäisellä puoliskolla.<br>
+    <strong>Tekniikka:</strong> Pohjaonki kastemadolla, maissilla tai
+    leipätaikinalla. Lahnan mäskäys edellisiltana lisää saalismääriä
+    huomattavasti.<br>
     <strong>Lähteet:</strong> Open-Meteo Weather &amp; Marine API, FMI Open Data
     (mareografiasema 134252 Föglö Degerby).
   </div>
 </div>
 
-<script type="module" src="rantakalastus.js"></script>
+<script type="module" src="pohjaonki.js"></script>
 </body>
 </html>

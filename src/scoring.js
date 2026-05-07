@@ -17,9 +17,39 @@
  *   7. SPECIES_META — labels, emoji, tackle text, peak hours.
  */
 
-import { WEATHER, HOURLY, TODAY } from "./data/data.js";
+import { WEATHER, HOURLY, TODAY, HATCH_BUDGET } from "./data/data.js";
 
 const TODAY_IDX = WEATHER.time.indexOf(TODAY);
+
+/**
+ * Siika hatch-budget multiplier curve.
+ *
+ * Maps cumulative-warm-day count (days where Marine SST ≥ 6 °C since the
+ * first warm day this calendar year) to a 0–1 multiplier on the siika base
+ * score. Captures the spring polychaete (harvasukamato) hatch lifecycle:
+ * worms emerge over ~5 days, peak hatch ~10 days, decline ~10 more, then
+ * the shore food chain decouples regardless of current temperature.
+ *
+ * Calibrated against catch reports: 3 weeks past first warm day = "fish
+ * are gone even though water reads fine".
+ */
+function hatchBudgetMultiplier(cumWarmDays) {
+  if (cumWarmDays == null) return 1.0;
+  if (cumWarmDays <= 5)  return 0.5;   // pre-hatch ramp
+  if (cumWarmDays <= 10) return 0.8;   // hatch ramping up
+  if (cumWarmDays <= 18) return 1.0;   // peak hatch
+  if (cumWarmDays <= 25) return 0.7;   // hatch winding down
+  if (cumWarmDays <= 35) return 0.4;   // mostly consumed
+  return 0.15;                         // effectively over
+}
+
+function hatchBudgetReason(mult) {
+  if (mult >= 1)    return null;
+  if (mult >= 0.8)  return "Sesonki käynnistymässä";
+  if (mult >= 0.7)  return "Sesonki hiipumassa";
+  if (mult >= 0.4)  return "Sesonki ohi";
+  return "Sesonki täysin ohi";
+}
 
 // ---------------------------------------------------------------------------
 // Generic shape function
@@ -307,6 +337,18 @@ export function scoreDay(idx, waterTempToday, waterTrend7d) {
     penalties.push("Kylmä kova offshore-tuuli · ×0.7");
   }
 
+  // Hatch-budget curve: where in the spring food-chain lifecycle are we?
+  // The model would otherwise score "perfect 8 °C day" identically whether
+  // it's day 5 of the hatch or day 30. See docs/decisions.md D13.
+  const date = WEATHER.time[idx];
+  const cumWarmDays = HATCH_BUDGET ? HATCH_BUDGET.perDay?.[date] : null;
+  const hatchMult = hatchBudgetMultiplier(cumWarmDays);
+  if (hatchMult < 1) {
+    mult *= hatchMult;
+    const reason = hatchBudgetReason(hatchMult);
+    penalties.push(`${reason} (${cumWarmDays} lämmintä päivää) · ×${hatchMult.toFixed(2)}`);
+  }
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -413,6 +455,59 @@ function scoreWaterTempKuha(t) {
   return triangular(t, 10, 18, 22, 25);
 }
 
+/** Särki water-temp triangular: optimum 14–22 °C. Wide, eurythermic. */
+function scoreWaterTempSarki(t) {
+  return triangular(t, 4, 14, 22, 26);
+}
+
+/** Lahna water-temp triangular: optimum 16–22 °C, sharp <10 cliff. */
+function scoreWaterTempLahna(t) {
+  return triangular(t, 10, 16, 22, 25);
+}
+
+/** Särki cloud preference — partly cloudy peak, similar shape to siika. */
+function scoreCloudSarki(p) {
+  if (p <= 10) return 75;
+  if (p <= 60) return 100;
+  if (p <= 80) return 75;
+  if (p <= 95) return 50;
+  return 30;
+}
+
+/** Lahna cloud preference — overcast / low-light favoured (similar to hauki/kuha). */
+function scoreCloudLahna(p) {
+  if (p >= 70) return 100;
+  if (p >= 40) return 80;
+  if (p >= 20) return 55;
+  return 30;
+}
+
+/** Lahna precipitation today — turbidity-positive: light/moderate rain peaks. */
+function scorePrecipTodayLahna(mm) {
+  if (mm < 0.5) return 60;
+  if (mm < 2)   return 90;
+  if (mm < 8)   return 100;
+  if (mm < 15)  return 80;
+  return 50;
+}
+
+/** Lahna precipitation 48h — broader window than today; recent rain is positive. */
+function scorePrecip48hLahna(mm) {
+  if (mm < 2)  return 60;
+  if (mm < 10) return 90;
+  if (mm < 25) return 100;
+  return 65;
+}
+
+/** Särki precipitation today — mild positive at low mm, otherwise siika-like. */
+function scorePrecipTodaySarki(mm) {
+  if (mm < 0.5) return 90;
+  if (mm < 2)   return 100;
+  if (mm < 5)   return 75;
+  if (mm < 10)  return 50;
+  return 25;
+}
+
 /**
  * Project water temperature for a future day, with a per-species clamp.
  * Same crude air-delta projection as siika.
@@ -502,6 +597,33 @@ function seasonGateKuha(dateStr, projectedWater) {
   if (m === 10) return 0.6;
   if (m === 11 || m === 12 || m === 1 || m === 2 || m === 3) return 0.1;
   return 0.5;
+}
+
+/** Särki: broad open-water season May–Nov, deep-winter dormant. */
+function seasonGateSarki(dateStr, projectedWater) {
+  const m = dateMonth(dateStr);
+  if (m === 1 || m === 2)            return 0.15;
+  if (m === 3 || m === 12)           return 0.4;
+  if (m === 4)                       return 0.7;
+  if (m === 11)                      return 0.5;
+  return 1;
+}
+
+/** Lahna: sharp opening at water ≥15 °C (typically mid-May), peak Jun–Jul, off after Oct. */
+function seasonGateLahna(dateStr, projectedWater) {
+  const m = dateMonth(dateStr);
+  if (m <= 4)             return 0.1;
+  if (m === 5) {
+    // Linear ramp May 1 (0.2) → May 20 (1.0), gated by water ≥ 14 °C.
+    const day = Number(dateStr.slice(8, 10));
+    const dayFactor = Math.max(0.2, Math.min(1.0, 0.2 + (day - 1) * (0.8 / 19)));
+    const tempFactor = projectedWater >= 14 ? 1 : Math.max(0.3, projectedWater / 14);
+    return dayFactor * tempFactor;
+  }
+  if (m === 6 || m === 7 || m === 8) return 1;
+  if (m === 9)                       return 0.85;
+  if (m === 10)                      return 0.4;
+  return 0.1;
 }
 
 // ---------------------------------------------------------------------------
@@ -896,6 +1018,269 @@ export function scoreKuha(idx, waterTempToday, waterTrend7d) {
 }
 
 // ---------------------------------------------------------------------------
+// Pohjaonki species — Särki, Lahna
+// ---------------------------------------------------------------------------
+
+/** Score a särki day. Same return shape as scoreDay(). */
+export function scoreSarki(idx, waterTempToday, waterTrend7d) {
+  const inputs = dayInputs(idx);
+  const dateStr = WEATHER.time[idx];
+  const { projected: projectedWater, daysFromToday } =
+    projectWater(idx, waterTempToday, [2, 27]);
+
+  const wtScore = scoreWaterTempSarki(projectedWater);
+  const wtrendScore = scoreWaterTrend(waterTrend7d);
+  const p24Score = scorePressureChange(inputs.dp24);
+  const p48Score = scorePressureChange(inputs.dp48);
+  const wSpeedScore = scoreWindSpeed(inputs.windKmh);
+  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const pr24 = scorePrecipTodaySarki(inputs.precip24);
+  const pr48 = scorePrecip48h(inputs.precip48Prev);
+  const cloudScore = scoreCloudSarki(inputs.cloudPct);
+  const airTempScore = triangular(WEATHER.tmax[idx], 0, 12, 24, 30);
+  const airTrendScore = scoreAirTrend(inputs.airTrend);
+
+  const factors = [
+    {
+      key: "wt", label: "Vesilämpötila", weight: 20, score: wtScore, critical: true,
+      value: projectedWater.toFixed(1) + " °C" + (daysFromToday > 0 ? " (arvio)" : ""),
+      reason:
+        projectedWater < 8 ? "Kylmää — särki hidasta" :
+        projectedWater < 14 ? "Käynnistymässä" :
+        projectedWater <= 22 ? "Optimi" :
+        projectedWater <= 24 ? "Lämmin" : "Liian lämmin"
+    },
+    {
+      key: "wtrend", label: "Veden trendi", weight: 5, score: wtrendScore,
+      value: (waterTrend7d >= 0 ? "+" : "") + waterTrend7d.toFixed(1) + " °C / 7 vrk",
+      reason: waterTrend7d > 0.5 ? "Lämpenevää" : waterTrend7d > -1 ? "Vakaa" : "Kylmenee"
+    },
+    {
+      key: "p24", label: "Paineen muutos 24h", weight: 7, score: p24Score,
+      value: (inputs.dp24 >= 0 ? "+" : "") + inputs.dp24.toFixed(1) + " hPa",
+      reason: p24Score >= 70 ? "Hyvä muutos" : "Liian stabiili"
+    },
+    {
+      key: "p48", label: "Paineen muutos 48h", weight: 4, score: p48Score,
+      value: (inputs.dp48 >= 0 ? "+" : "") + inputs.dp48.toFixed(1) + " hPa",
+      reason: p48Score >= 70 ? "Liikkuva sää" : "Hidasta"
+    },
+    {
+      key: "ws", label: "Tuulen voimakkuus", weight: 6, score: wSpeedScore,
+      value: inputs.windMs.toFixed(1) + " m/s",
+      reason:
+        inputs.windMs >= 1 && inputs.windMs <= 6 ? "Sopiva" :
+        inputs.windMs < 1 ? "Tyyntä — OK" :
+        inputs.windMs > 10 ? "Liian kovaa parville" : "Reipasta"
+    },
+    {
+      key: "wd", label: "Tuulen suunta", weight: 3, score: wDirScore,
+      value: Math.round(inputs.windDir) + "° " + compassLetter(inputs.windDir),
+      reason: wDirScore >= 70 ? "Onshore" : wDirScore >= 40 ? "Sivutuuli" : "Offshore"
+    },
+    {
+      key: "r24", label: "Sade 24h", weight: 6, score: pr24,
+      value: inputs.precip24.toFixed(1) + " mm",
+      reason: inputs.precip24 < 2 ? "Pieni sade — OK" : inputs.precip24 < 8 ? "Reipas sade" : "Rankkaa"
+    },
+    {
+      key: "r48", label: "Sade edellä 48h", weight: 5, score: pr48,
+      value: inputs.precip48Prev.toFixed(1) + " mm",
+      reason: pr48 >= 80 ? "Kuivia" : "Sateisia"
+    },
+    {
+      key: "cc", label: "Pilvisyys", weight: 10, score: cloudScore,
+      value: Math.round(inputs.cloudPct) + " %",
+      reason:
+        cloudScore >= 90 ? "Puolipilvistä — paras" :
+        inputs.cloudPct < 20 ? "Hyvin kirkasta" :
+        inputs.cloudPct > 90 ? "Täyspilvinen" : "OK"
+    },
+    {
+      key: "at", label: "Ilman lämpötila", weight: 3, score: airTempScore,
+      value: WEATHER.tmax[idx].toFixed(1) + " °C",
+      reason: airTempScore >= 70 ? "Sopiva" : "Rajalla"
+    },
+    {
+      key: "att", label: "Ilman trendi 48h", weight: 5, score: airTrendScore,
+      value: (inputs.airTrend >= 0 ? "+" : "") + inputs.airTrend.toFixed(1) + " °C",
+      reason: airTrendScore >= 80 ? "Lämpenevää" : "Pieni muutos"
+    },
+    {
+      key: "tod", label: "Vuorokaudenaika", weight: 6, score: 75,
+      value: "Päiväaikaan",
+      reason: "Aamupäivä ja iltapäivä — katso tunnit"
+    }
+  ];
+
+  let total = 0, totalW = 0;
+  for (const f of factors) { total += f.score * f.weight; totalW += f.weight; }
+  let baseScore = total / totalW;
+
+  const seasonMult = seasonGateSarki(dateStr, projectedWater);
+  const penalties = [];
+  let mult = seasonMult;
+  if (seasonMult < 1) penalties.push("Kausi: ×" + seasonMult.toFixed(2));
+  if (projectedWater < 5) {
+    mult *= 0.4;
+    penalties.push("Vesi <5 °C · ×0.4");
+  } else if (projectedWater > 25) {
+    mult *= 0.5;
+    penalties.push("Vesi >25 °C · ×0.5");
+  }
+  if (waterTrend7d <= -2.5) {
+    mult *= 0.8;
+    penalties.push("Veden romahdus · ×0.8");
+  }
+
+  return {
+    total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
+    baseScore: Math.round(baseScore),
+    factors,
+    penalties,
+    mult,
+    projectedWater
+  };
+}
+
+/** Score a lahna day. Same return shape as scoreDay(). */
+export function scoreLahna(idx, waterTempToday, waterTrend7d) {
+  const inputs = dayInputs(idx);
+  const dateStr = WEATHER.time[idx];
+  const { projected: projectedWater, daysFromToday } =
+    projectWater(idx, waterTempToday, [4, 27]);
+
+  const wtScore = scoreWaterTempLahna(projectedWater);
+  const wtrendScore = scoreWaterTrend(waterTrend7d);
+  const p24Score = scorePressureChangeHauki(inputs.dp24); // mild falling-pressure boost
+  const p48Score = scorePressureChange(inputs.dp48);
+  const wSpeedScore = scoreWindSpeed(inputs.windKmh);
+  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const pr24 = scorePrecipTodayLahna(inputs.precip24);
+  const pr48 = scorePrecip48hLahna(inputs.precip48Prev);
+  const cloudScore = scoreCloudLahna(inputs.cloudPct);
+  const airTempScore = triangular(WEATHER.tmax[idx], 5, 16, 26, 32);
+  const airTrendScore = scoreAirTrend(inputs.airTrend);
+
+  const factors = [
+    {
+      key: "wt", label: "Vesilämpötila", weight: 24, score: wtScore, critical: true,
+      value: projectedWater.toFixed(1) + " °C" + (daysFromToday > 0 ? " (arvio)" : ""),
+      reason:
+        projectedWater < 12 ? "Liian kylmä — lahna syvällä" :
+        projectedWater < 15 ? "Avautumassa (≥15 °C avaa kauden)" :
+        projectedWater < 16 ? "Käynnistymässä" :
+        projectedWater <= 22 ? "Optimi" :
+        projectedWater <= 24 ? "Lämmin — yöllä" : "Liian lämmin"
+    },
+    {
+      key: "wtrend", label: "Veden trendi", weight: 8, score: wtrendScore,
+      value: (waterTrend7d >= 0 ? "+" : "") + waterTrend7d.toFixed(1) + " °C / 7 vrk",
+      reason:
+        waterTrend7d > 1 ? "Lämpeneminen avaa kauden" :
+        waterTrend7d > 0 ? "Lämpenee hitaasti" :
+        waterTrend7d > -1 ? "Vakaa" : "Kylmenee — sulkee rannan"
+    },
+    {
+      key: "p24", label: "Paineen muutos 24h", weight: 8, score: p24Score,
+      value: (inputs.dp24 >= 0 ? "+" : "") + inputs.dp24.toFixed(1) + " hPa",
+      reason:
+        inputs.dp24 < -3 && inputs.dp24 > -8 ? "Laskussa — usein hyvä" :
+        p24Score >= 70 ? "Hyvä muutos" :
+        Math.abs(inputs.dp24) < 3 ? "Liian stabiili" : "Ei optimaalinen"
+    },
+    {
+      key: "p48", label: "Paineen muutos 48h", weight: 4, score: p48Score,
+      value: (inputs.dp48 >= 0 ? "+" : "") + inputs.dp48.toFixed(1) + " hPa",
+      reason: p48Score >= 70 ? "Liikkuva sää" : "Hidasta"
+    },
+    {
+      key: "ws", label: "Tuulen voimakkuus", weight: 8, score: wSpeedScore,
+      value: inputs.windMs.toFixed(1) + " m/s",
+      reason:
+        inputs.windMs >= 3 && inputs.windMs <= 9 ? "Sopiva — sekoittaa pohjaa" :
+        inputs.windMs < 1 ? "Tyyntä — OK iltaisin" :
+        inputs.windMs > 12 ? "Liian kovaa" : "Reipasta"
+    },
+    {
+      key: "wd", label: "Tuulen suunta", weight: 5, score: wDirScore,
+      value: Math.round(inputs.windDir) + "° " + compassLetter(inputs.windDir),
+      reason:
+        wDirScore >= 70 ? "Onshore — kesällä paras" :
+        wDirScore >= 40 ? "Sivutuuli" : "Offshore"
+    },
+    {
+      key: "r24", label: "Sade 24h", weight: 8, score: pr24,
+      value: inputs.precip24.toFixed(1) + " mm",
+      reason:
+        inputs.precip24 < 0.5 ? "Liian kuiva — lahnalle parempi vähän sadetta" :
+        inputs.precip24 < 8 ? "Kuhakeli — sumea vesi suosii" :
+        inputs.precip24 < 15 ? "Reipas sade" : "Rankkaa"
+    },
+    {
+      key: "r48", label: "Sade edellä 48h", weight: 6, score: pr48,
+      value: inputs.precip48Prev.toFixed(1) + " mm",
+      reason: pr48 >= 80 ? "Sumea, lahnalle hyvä" : "Kuiva — vesi liian kirkas"
+    },
+    {
+      key: "cc", label: "Pilvisyys", weight: 14, score: cloudScore, critical: true,
+      value: Math.round(inputs.cloudPct) + " %",
+      reason:
+        inputs.cloudPct >= 70 ? "Pilvistä — lahnalle paras" :
+        inputs.cloudPct >= 40 ? "Vaihtelevaa" :
+        inputs.cloudPct >= 20 ? "Aurinkoinen — yöllä parempi" : "Kirkas — odota hämärää"
+    },
+    {
+      key: "at", label: "Ilman lämpötila", weight: 2, score: airTempScore,
+      value: WEATHER.tmax[idx].toFixed(1) + " °C",
+      reason: airTempScore >= 70 ? "Lämmin — hyvä" : "Viileä"
+    },
+    {
+      key: "att", label: "Ilman trendi 48h", weight: 5, score: airTrendScore,
+      value: (inputs.airTrend >= 0 ? "+" : "") + inputs.airTrend.toFixed(1) + " °C",
+      reason: airTrendScore >= 80 ? "Lämpenevää" : "Pieni muutos"
+    },
+    {
+      key: "tod", label: "Vuorokaudenaika", weight: 8, score: 85, critical: true,
+      value: "Hämärä / yön alku",
+      reason: "Auringonlasku ja yön ensimmäinen puolisko parhaat"
+    }
+  ];
+
+  let total = 0, totalW = 0;
+  for (const f of factors) { total += f.score * f.weight; totalW += f.weight; }
+  let baseScore = total / totalW;
+
+  const seasonMult = seasonGateLahna(dateStr, projectedWater);
+  const penalties = [];
+  let mult = seasonMult;
+  if (seasonMult < 1) penalties.push("Kausi: ×" + seasonMult.toFixed(2));
+  if (projectedWater < 10) {
+    mult *= 0.1;
+    penalties.push("Vesi <10 °C — lahna syvällä · ×0.1");
+  } else if (projectedWater < 12) {
+    mult *= 0.3;
+    penalties.push("Vesi <12 °C — lahna juuri rannalla · ×0.3");
+  } else if (projectedWater > 25) {
+    mult *= 0.5;
+    penalties.push("Vesi >25 °C · ×0.5");
+  }
+  if (waterTrend7d <= -2.5) {
+    mult *= 0.7;
+    penalties.push("Veden romahdus — lahna pakenee · ×0.7");
+  }
+
+  return {
+    total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
+    baseScore: Math.round(baseScore),
+    factors,
+    penalties,
+    mult,
+    projectedWater
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Dispatchers
 // ---------------------------------------------------------------------------
 
@@ -906,6 +1291,8 @@ export function scoreSpecies(species, idx, waterTempToday, waterTrend7d) {
     case "hauki": return scoreHauki(idx, waterTempToday, waterTrend7d);
     case "ahven": return scoreAhven(idx, waterTempToday, waterTrend7d);
     case "kuha":  return scoreKuha(idx, waterTempToday, waterTrend7d);
+    case "sarki": return scoreSarki(idx, waterTempToday, waterTrend7d);
+    case "lahna": return scoreLahna(idx, waterTempToday, waterTrend7d);
     default: throw new Error("Unknown species: " + species);
   }
 }
@@ -927,6 +1314,21 @@ export function scoreRantakalastus(idx, waterTempToday, waterTrend7d) {
   for (const k of order) {
     if (scores[k].total > scores[best].total) best = k;
   }
+  return { best, scores };
+}
+
+/**
+ * Score the two pohjaonki species for a single day, identifying the
+ * highest-scoring one.
+ *
+ * @returns {{ best: "sarki"|"lahna", scores: { sarki, lahna } }}
+ */
+export function scorePohjaonki(idx, waterTempToday, waterTrend7d) {
+  const scores = {
+    sarki: scoreSarki(idx, waterTempToday, waterTrend7d),
+    lahna: scoreLahna(idx, waterTempToday, waterTrend7d)
+  };
+  const best = scores.sarki.total >= scores.lahna.total ? "sarki" : "lahna";
   return { best, scores };
 }
 
@@ -962,28 +1364,32 @@ function approxSunHours(dateStr) {
 function scoreTimeOfDay(species, dateStr, hour) {
   const peakHours = SPECIES_META[species].peakHours;
   const nightWindow = SPECIES_META[species].nightWindow;
-  const { sunrise, sunset } = approxSunHours(dateStr);
 
-  let score = 30; // base
-
+  // Species with explicit peak hours (siika, ahven, sarki) are committed to
+  // clock-time peaks. Sun-relative bonuses don't apply — at 60.4°N latitude
+  // sunrise can be 04:00 in summer, which is wrong for diurnal species.
   if (peakHours && peakHours.length > 0) {
-    if (peakHours.includes(hour)) score = 100;
-    else if (peakHours.includes(hour - 1) || peakHours.includes(hour + 1)) score = 65;
+    if (peakHours.includes(hour)) return 100;
+    if (peakHours.includes(hour - 1) || peakHours.includes(hour + 1)) return 65;
+    return 30;
   }
 
-  // Dawn/dusk windows (always, regardless of explicit peakHours)
+  // Sun-relative species (hauki, kuha, lahna): score from dawn/dusk distance.
+  const { sunrise, sunset } = approxSunHours(dateStr);
   const dawnDist = Math.abs(hour + 0.5 - sunrise);   // hour midpoint
   const duskDist = Math.abs(hour + 0.5 - sunset);
   const sunDist = Math.min(dawnDist, duskDist);
-  if (sunDist <= 1.5) score = Math.max(score, 100);
-  else if (sunDist <= 2.5) score = Math.max(score, 70);
 
-  // Kuha night bonus: nautical twilight + full night
+  let score = 30;
+  if (sunDist <= 1.5)      score = 100;
+  else if (sunDist <= 2.5) score = 70;
+
   if (nightWindow) {
+    // Kuha + lahna: nautical twilight + first half of night also good.
     const isNight = (hour + 0.5) < (sunrise - 1) || (hour + 0.5) > (sunset + 1);
     if (isNight) score = Math.max(score, 85);
 
-    // Suppress harsh midday for kuha
+    // Suppress harsh midday on clear-day species.
     const solarNoon = (sunrise + sunset) / 2;
     if (Math.abs(hour + 0.5 - solarNoon) < 2) score = Math.min(score, 40);
   }
@@ -1142,5 +1548,43 @@ export const SPECIES_META = {
       "(Rapala Husky Jerk Deep, X-Rap Magnum) hidaspaussilla. " +
       "Kuhalle myös syöttikala (silakka, kuore) pohjaongella. " +
       "Toimii parhaiten 21:00–02:00 kesäaikaan, syksyllä jo iltapäivästä."
+  },
+  sarki: {
+    label: "Särki",
+    emoji: "🌞",
+    color: "#f4a261",
+    peakHours: [9, 10, 11, 17, 18, 19],
+    nightWindow: false,
+    tackle:
+      "Float-onki maton, maissin tai leivän kanssa. Mäskäys auttaa.",
+    tackleLong:
+      "Kevyt float-onki: 0.14–0.18 mm siima, koukku 12–16, pieni " +
+      "kelluja 0.5–2 g. Syöttinä kärpäsen toukat (matomadot), pienet " +
+      "kastemadot, mais tai leipätaikina. Pohjaonki samalla syötillä " +
+      "tehoaa isommille kaloille. " +
+      "Mäskäys (mäskäys leipämurujen + vaniljan + maissin / madonpalojen " +
+      "kanssa) edellisenä iltana lisää saalismääriä huomattavasti. " +
+      "Parhaiten matalilla rantakallioilla, satamissa, kanaviin liittyvillä " +
+      "rannoilla."
+  },
+  lahna: {
+    label: "Lahna",
+    emoji: "🥖",
+    color: "#7e6b8f",
+    peakHours: null, // sunset + first half of night
+    nightWindow: true,
+    tackle:
+      "Pohjaonki kastemadolla, maissilla tai taikinalla. Mäskäys edellisiltana.",
+    tackleLong:
+      "Pohjaonki on hallitseva tekniikka: 0.20–0.25 mm siima, koukku 6–12, " +
+      "syöttinä kastemato (kevät, paras), mais (kesä), leipätaikina " +
+      "tai matomatu. Heitä rantakaislikkojen tai satama-altaiden " +
+      "pehmeille pohjille; quiver-tip vapa tai pohjavapa kellolla / " +
+      "klipsillä havaitsee nykäisyn. " +
+      "Mäskäys edellisiltana on standardi käytäntö: leipämuruja + " +
+      "vaniljaa/aniksia + maissia/madonpalasia. Toimii parhaiten " +
+      "auringonlaskusta klo 02:00 asti. " +
+      "Saaronniemen kärki on huonoa lahnavettä — mene Pansion lahdelle, " +
+      "Aurajoen suulle, Ruissalon sisälahdille tai Hirvensalon eteläpuolelle."
   }
 };

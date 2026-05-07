@@ -41,7 +41,11 @@ const FOGLO_POS = "60.03188 20.38482"; // gml:pos value to filter on
 
 const PAST_DAYS = 3;       // weather (and HOURLY) past window
 const FORECAST_DAYS = 7;   // weather (and HOURLY) forecast window
-const MARINE_PAST_DAYS = 10; // need ≥7 to compute trend7d
+const MARINE_PAST_DAYS = 92; // need long history for hatch budget; 92 = Open-Meteo max
+// Hatch budget threshold: cumulative days where Marine SST ≥ this temp.
+// Marine runs ~2 °C warm vs. shore, so 6 °C marine ~= 4 °C shore — the
+// threshold for harvasukamato emergence.
+const HATCH_TEMP_THRESHOLD = 6.0;
 // FMI WFS caps the time window at 168 hours (7 days) per query.
 const FMI_LOOKBACK_HOURS = 167;
 
@@ -283,6 +287,49 @@ function buildMarine(raw, today) {
   };
 }
 
+/**
+ * Compute the siika hatch budget from the marine SST series.
+ *
+ * Counts cumulative days this calendar year where SST ≥ HATCH_TEMP_THRESHOLD,
+ * starting from the first such day (the "spring activation"). Returns the
+ * count for each forecast day in the WEATHER series so scoring.js can apply
+ * a multiplier per future day.
+ *
+ * @returns {null | { firstWarmDay: string, perDay: Record<string, number> }}
+ *   null when there's no warm day on record yet (cold spring) — caller treats
+ *   this as "season hasn't started, score normally".
+ */
+function buildHatchBudget(raw, today, weatherDates) {
+  const times = raw.daily.time;
+  const sst = raw.daily.sea_surface_temperature_mean;
+  const year = Number(today.slice(0, 4));
+
+  let firstWarmDay = null;
+  let cumulativeWarm = 0;
+  // Map of date → cumulative warm-day count up to and including that date.
+  const cumulativeByDate = {};
+  for (let i = 0; i < times.length; i++) {
+    const t = times[i];
+    if (Number(t.slice(0, 4)) !== year) continue;   // ignore other years
+    const v = sst[i];
+    if (v != null && v >= HATCH_TEMP_THRESHOLD) {
+      if (firstWarmDay == null) firstWarmDay = t;
+      cumulativeWarm += 1;
+    }
+    cumulativeByDate[t] = cumulativeWarm;
+  }
+
+  if (firstWarmDay == null) return null;
+
+  // Pick out the values for each weather date the frontend will display.
+  const perDay = {};
+  for (const d of weatherDates) {
+    if (cumulativeByDate[d] != null) perDay[d] = cumulativeByDate[d];
+  }
+
+  return { firstWarmDay, perDay };
+}
+
 function buildFoglo(values) {
   if (values.length === 0) {
     throw new Error("foglo: no usable observations returned");
@@ -309,7 +356,7 @@ function round1(n) { return Math.round(n * 10) / 10; }
 // Output: render data.js
 // ---------------------------------------------------------------------------
 
-function renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo }) {
+function renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo, hatchBudget }) {
   const j = (v) => JSON.stringify(v);
   const arr = (label, v) => `  ${label}: ${j(v)}`;
   const weatherBody = [
@@ -382,6 +429,18 @@ export const MARINE = ${j(marine)};
 export const FOGLO = ${j(foglo)};
 
 /**
+ * Cumulative warm-water-day count for the siika hatch budget. Each entry
+ * maps a forecast date to the number of days since Jan 1 where Marine SST
+ * was ≥ ${HATCH_TEMP_THRESHOLD} °C. \`null\` means "no warm day on record yet"
+ * (cold spring) — the scorer treats this as a 1.0 multiplier (don't penalise).
+ *
+ * The siika scorer in scoring.js converts these counts into a multiplier
+ * curve that ramps up at season start, peaks ~10 days into the hatch, and
+ * tails off after ~3 weeks.
+ */
+export const HATCH_BUDGET = ${j(hatchBudget)};
+
+/**
  * Default override values used when the user first opens the app.
  * Seeded from FOGLO so the slider lands on something reasonable.
  */
@@ -425,9 +484,10 @@ async function main() {
   const weather = buildWeather(rawWeather);
   const hourly = buildHourly(rawWeather, today);
   const marine = buildMarine(rawMarine, today);
+  const hatchBudget = buildHatchBudget(rawMarine, today, weather.time);
   const foglo = buildFoglo(fogloValues);
 
-  const dataJs = renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo });
+  const dataJs = renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo, hatchBudget });
   const snapshotJson = JSON.stringify({
     fetched: fetchedAt,
     today,
@@ -443,6 +503,12 @@ async function main() {
   console.log(`[refresh] wrote ${join(OUT_DIR, "snapshot.json")} (${snapshotJson.length} bytes)`);
   console.log(`[refresh] marine: today=${marine.todayTemp}°C, 7d trend=${marine.trend7d}°C`);
   console.log(`[refresh] foglo:  today=${foglo.todayTemp}°C, 7d trend=${foglo.trend7d}°C`);
+  if (hatchBudget) {
+    const todayCum = hatchBudget.perDay[today];
+    console.log(`[refresh] hatch budget: firstWarmDay=${hatchBudget.firstWarmDay}, todayDays=${todayCum}`);
+  } else {
+    console.log(`[refresh] hatch budget: no warm day on record yet (cold spring)`);
+  }
 }
 
 main().catch(err => {

@@ -170,6 +170,34 @@ Domain-specific Finnish nouns (`siika`, `harvasukamato`) are kept where they're 
 
 ---
 
+## D13. Hatch-budget tracker for siika
+
+**Decision:** Phase 3 adds a `HATCH_BUDGET` constant to `data.js`, computed by `scripts/refresh.mjs` from Open-Meteo Marine SST history (`past_days=92`). The siika scorer applies a multiplier curve (0.5/0.8/1.0/0.7/0.4/0.15) based on cumulative warm-water-day count this calendar year.
+
+**Rationale:** Real-world catch data falsified the Phase-2 model. After a week of using the live site, the user reported zero siika across many days where the model scored 70–100; other anglers in the area reported the same. The original assumption — "water 6–10 °C → siika feeds" — is biologically incomplete. Spring shore siika feeding is gated by the polychaete (harvasukamato) hatch, which is a one-shot ~3-week event each spring. After the hatch is consumed, the shore food chain decouples regardless of current temperature. The `HATCH_BUDGET` curve encodes this directly: ramp up at start, peak ~10 days, taper to zero. The user's data point ("3 weeks ago we caught siika, now nothing") maps cleanly to the 26–35 warm-day band (×0.4 multiplier).
+
+**Why Open-Meteo Marine despite the +2 °C bias:** The bias is a constant offset on a single source, so calibration just shifts the threshold. Marine SST is also the only multi-month consistent water-temperature signal we can pull (Föglö's WFS query is capped at 168 hours of history). 6 °C marine ≈ 4 °C shore, which matches the worm-emergence threshold.
+
+**Trade-off:** Calibrated against a single user observation. The curve is therefore opinionated and might over-correct for a different year's hatch dynamics. A catch log would let it self-tune, but that's still excluded. Reconsider if the user reports the model now over-penalising during a strong year.
+
+---
+
+## D14. Pohjaonki as a separate page from rantakalastus
+
+**Decision:** Phase 3 adds a new `/pohjaonki.html` page covering särki and lahna, instead of folding those species into the existing `/rantakalastus.html` (which would have become a 5-species page covering hauki/ahven/kuha/särki/lahna).
+
+**Rationale:** The two pages map to genuinely different angler workflows:
+- **Rantakalastus** = predator fishing with lures (jerkbaits, jigs, soft plastics on weighted heads). Different rod, different reel, active casting and retrieving. Targets dawn/dusk for hauki, daylight for ahven, twilight/night for kuha.
+- **Pohjaonki** = bait fishing with bottom rigs and float tackle (worms, corn, bread, maggots, often groundbait). Different rod, lighter line, passive presentation. Targets midday for särki, evening/night for lahna.
+
+Folding all five into one page would also produce visually overwhelming day cards (one main score + four mini-scores) and conflate the two workflows in the detail panel. The page-per-workflow split keeps each multi-species view focused on 2–3 species at a time.
+
+**Default landing routing change:** April–May → siika; **June–August → pohjaonki** (peak lahna season is the headline summer catch); otherwise → rantakalastus. This matches the seasonal centre-of-gravity for what an angler is actually fishing for.
+
+**Out of scope:** Per-spot wind calibration (lahna in particular is bad at Saaronniemi cape — better at Pansio, Aurajoki mouth, Ruissalon sisälahti — but the forecast remains useful for "is today a good lahna day at *some* shore in the Turku area").
+
+---
+
 ## Open decisions / TODOs
 
 - Choice of test runner (vitest vs node --test vs ...) — not yet decided.

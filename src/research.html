@@ -10,6 +10,7 @@
 <div class="container">
   <nav class="site-nav">
     <a href="siika.html">Siika</a>
+    <a href="pohjaonki.html">Pohjaonki</a>
     <a href="rantakalastus.html">Rantakalastus</a>
     <a href="research.html" class="active">Tiede</a>
   </nav>
@@ -230,6 +231,36 @@
       nykäisyn; lyö ohuesti, älä riuhdo.
     </p>
 
+    <h3>🐛 Sesonkikello — miksi pisteet putoavat vaikka olot näyttävät hyvältä</h3>
+    <p>
+      Käytännön tulokset osoittivat (toukokuun alussa 2026): viikon mittaan
+      pisteet näyttivät 70–100, mutta kukaan ei saanut ainuttakaan siikaa.
+      Eikä särkiä. Mallin alkuperäinen virhe oli että se kohteli jokaista
+      8 °C päivää samanlaisena — biologisesti tämä on väärin.
+    </p>
+    <p>
+      <strong>Harvasukamadot</strong> nousevat pohjasta yhden kevätpurkauksen
+      muodossa, joka kestää noin 3 viikkoa. Sen jälkeen siian ravintoa ei
+      enää ole — kala on syönyt madot ja siirtynyt syvempään, vaikka vesi
+      olisi vielä optimialueella. Mallin <strong>sesonkikello</strong> laskee
+      kuluneita lämpimiä päiviä (≥6 °C avovesimallissa) kevään ensimmäisestä
+      lämpöpäivästä lukien:
+    </p>
+    <ul>
+      <li><strong>0–5 päivää:</strong> ×0.50 — sesonki vasta käynnistymässä, madot eivät vielä nousseet</li>
+      <li><strong>6–10 päivää:</strong> ×0.80 — käynnistymisvaihe</li>
+      <li><strong>11–18 päivää:</strong> ×1.00 — <strong>huippukausi</strong>, päivän pisteet täysillä</li>
+      <li><strong>19–25 päivää:</strong> ×0.70 — sesonki hiipumassa</li>
+      <li><strong>26–35 päivää:</strong> ×0.40 — sesonki ohi, kala syvällä</li>
+      <li><strong>36+ päivää:</strong> ×0.15 — täysin ohi tämän vuoden osalta</li>
+    </ul>
+    <p>
+      Päiväkortilla näkyy tämä rangaistus tekstinä ("Sesonki hiipumassa"
+      jne.). Kerroin lasketaan päivittäin Open-Meteo Marine -avovesi­mallin
+      historiatiedosta — ei käyttäjän asetuksista. Jos vuosi on kylmä eikä
+      lämpöpäiviä ole vielä kertynyt lainkaan, sesonkikello ei rankaise.
+    </p>
+
     <!-- ===== HAUKI ===== -->
 
     <h2 id="hauki">🐊 Hauki</h2>
@@ -384,12 +415,151 @@
       vähimmäismitta suolaisessa vedessä.</strong>
     </p>
 
+    <!-- ===== SÄRKI ===== -->
+
+    <h2 id="sarki">🌞 Särki</h2>
+
+    <h3>Biologia ja kausi</h3>
+    <p>
+      Särki (<em>Rutilus rutilus</em>) on Saaristomeren ubiquitous
+      parvikalastettava. Eurytherminen — pärjää 4 °C:sta 26 °C:een,
+      ihanne 14–22 °C. Kutu touko–kesäkuun vaihteessa rannan kasvustoissa
+      vesilämpötilassa 10–14 °C; kutu kestää ~2 viikkoa, kalat paikalla
+      mutta syönti tauolla itse kudun ajan.
+    </p>
+    <p>
+      Käytännön rantakausi: <strong>huhtikuun puolivälistä marraskuuhun</strong>,
+      huippu kesäkuusta elokuuhun. Syksyllä Hautala (2008) osoitti
+      kalalle siirtymisen päiväaktiivisuudesta hämäräpainotteiseen
+      syöntiin veden jäähtyessä 20 → 10 °C alueelle.
+    </p>
+
+    <h3>Mikä ratkaisee särkikelin</h3>
+    <ul>
+      <li>
+        <strong>Vesilämpö 14–22 °C optimi.</strong> Trendillä vähäinen
+        merkitys — särki sopeutuu nopeasti.
+      </li>
+      <li>
+        <strong>Kevyt onshore-tuuli (1–6 m/s).</strong> Tyyntä OK, kova
+        tuuli (>10 m/s) hajottaa parvet. Tuulen suunnan paino on
+        mallin alhaisin — joustavin kala.
+      </li>
+      <li>
+        <strong>Vuorokaudenaika 09–11 ja 17–19.</strong> Päiväaktiivinen,
+        keskipäivän hiljaisuus syksyllä korostuu.
+      </li>
+      <li>
+        <strong>Pilvisyys puolipilvistä (30–70 %)</strong> on paras.
+        Täyspilvi syksyllä passivoi, kirkas keskipäivä kesällä ajaa
+        syvemmälle.
+      </li>
+      <li>
+        <strong>Sade tai sumea vesi</strong> ei haittaa juuri lainkaan —
+        särki ei ole yhtä näköriippuvainen kuin siika.
+      </li>
+    </ul>
+
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Kevyt float-onki: 0.14–0.18 mm siima, koukku 12–16, pieni kelluja
+      0.5–2 g. Syöttinä kärpäsen toukat (matomadot), pienet kastemadot,
+      mais tai leipätaikina. Pohjaonki samalla syötillä tehoaa isommille
+      kaloille. <strong>Mäskäys</strong> (leipämurujen + vaniljan +
+      maissin / madonpalojen kanssa) edellisenä iltana lisää saalismääriä
+      huomattavasti. Saaronniemi on OK särkivettä, mutta sisempi Ruissalo,
+      Aurajoen suu ja satamat ovat parempia.
+    </p>
+
+    <!-- ===== LAHNA ===== -->
+
+    <h2 id="lahna">🥖 Lahna</h2>
+
+    <h3>Biologia ja kausi</h3>
+    <p>
+      Lahna (<em>Abramis brama</em>) on Saaristomeren <strong>lämpimimmän
+      veden pohjasyöjä</strong>. Optimi 16–22 °C; alle 10 °C lahna on
+      syvällä eikä rannalla saatavissa. Kausi avautuu jyrkästi kun
+      rantavesi nousee yli <strong>15 °C</strong> — tyypillisesti
+      <strong>15. toukokuuta – 5. kesäkuuta</strong> 60.4°N leveysasteella.
+    </p>
+    <p>
+      Kutu vesilämpötilassa 14–20 °C, huippu 15–18 °C. Tämä osuu
+      tuomenkukinnan kanssa samaan aikaan ("lahnankuhinta"). Kutu on
+      jaksoittainen ja kestää 2–3 viikkoa. Kutu loppumisen jälkeen
+      <strong>kesäkuun puolivälistä heinäkuun loppuun</strong> on
+      paras kalastusaika — toipuminen ja ahkera syönti rannoilla.
+    </p>
+    <p>
+      Lahna on Suomen kalastusperinteessä se laji joka "ottaa siian
+      paikan" kun siikakausi loppuu. Mekanismi on eri (lämpimämpi vesi,
+      mutapohjat, hämäräaktiivisuus, sekasyömäri), mutta kalenteri­paikka
+      on sama.
+    </p>
+
+    <h3>Mikä ratkaisee lahnakelin</h3>
+    <ul>
+      <li>
+        <strong>Vesi ≥ 15 °C avaa kauden.</strong> Tämä on jyrkin
+        veden­lämpö­raja koko mallissa. Alle 10 °C lahna on syvällä,
+        ×0.1 rangaistus.
+      </li>
+      <li>
+        <strong>Auringonlasku ja yön ensimmäinen puolisko (klo 21–02
+        kesäaikaan).</strong> Isot lahnat ovat lähes täysin yöaktiivisia.
+        Päiväkalastus mahdollista keväällä viileässä vedessä ja paksun
+        pilven alla, mutta huippua ei.
+      </li>
+      <li>
+        <strong>Pilvisyys ja sade ovat lahnan ystäviä.</strong> Lahna
+        syö lateraali­elimellä ja kemoreseptorilla, ei pelkällä näöllä —
+        sumeassa vedessä se ON ihan kotonaan. Sade­paino on mallin
+        korkein.
+      </li>
+      <li>
+        <strong>Kesä: tuulinen ranta.</strong> "Kesällä lahna etsii
+        tuulen­puoleisia rantoja" — tuuli sekoittaa pohjaa, nostaa
+        ravintoa, sumentaa veden.
+      </li>
+      <li>
+        <strong>Syksy: tyyni ranta.</strong> "Syksyllä se tulee tyynille
+        rannoille" — viileämmässä vedessä rauhalliset poukamat lämpenevät
+        nopeammin.
+      </li>
+    </ul>
+
+    <h3>Saaronniemen ongelma</h3>
+    <p>
+      <strong>Saaronniemen kärki on huonoa lahnavettä.</strong> Hiekkainen
+      ja sorainen, suhteellisen kirkasta, ei pehmeää pohjaa. Lahna
+      preferoi sisäisiä sheltered lahtia, kanavia, joen suita ja
+      satama-altaita. Parhaat paikat Turun seudulla:
+    </p>
+    <ul>
+      <li><strong>Pansion lahti</strong> — eutrofinen, pehmeäpohjainen, klassinen lahnavesi</li>
+      <li><strong>Aurajoen suu ja alaosa</strong> — sumea, ravintorikas</li>
+      <li><strong>Ruissalon sisälahdet</strong> kärjen itäpuolella</li>
+      <li><strong>Naantalin satama-allas</strong> ja vastaavat suojaiset urbaanilahdet</li>
+      <li><strong>Hirvensalon eteläranta</strong> (Friskala/Kakskerta sisäpoukamat)</li>
+    </ul>
+
+    <h3>Vinkki: tackle ja tekniikka</h3>
+    <p>
+      Pohjaonki on hallitseva tekniikka: 0.20–0.25 mm siima, koukku 6–12,
+      syöttinä kastemato (kevät, paras), mais (kesä), leipätaikina tai
+      matomatu. Heitä rantakaislikkojen tai satama-altaiden pehmeille
+      pohjille; quiver-tip vapa tai pohjavapa kellolla / klipsillä havaitsee
+      nykäisyn. <strong>Mäskäys edellisiltana on standardi käytäntö</strong>
+      — leipämuruja + vaniljaa/aniksia + maissia/madonpalasia.
+    </p>
+
     <p style="font-size:12px;color:#64748b;margin-top:24px">
       Yksityiskohtaiset kaavat ja painokertoimet löytyvät viereiseltä
       <em>Algoritmin spesifikaatio</em> -välilehdeltä (englanniksi).
       Lähteet ja laajempi tausta:
       <code>docs/research.md</code> (siika, FI),
-      <code>docs/research-rantakalastus.md</code> (hauki/ahven/kuha, FI) ja
+      <code>docs/research-rantakalastus.md</code> (hauki/ahven/kuha, FI),
+      <code>docs/research-pohjaonki.md</code> (särki/lahna, FI) ja
       <code>docs/methodology.md</code> (EN).
     </p>
   </section>
@@ -451,7 +621,7 @@
       </tbody>
     </table>
 
-    <h3>Rantakalastus species (hauki / ahven / kuha)</h3>
+    <h3>Rantakalastus + Pohjaonki species (hauki / ahven / kuha / särki / lahna)</h3>
     <table>
       <thead>
         <tr>
@@ -459,30 +629,47 @@
           <th>Hauki</th>
           <th>Ahven</th>
           <th>Kuha</th>
+          <th>Särki</th>
+          <th>Lahna</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Water temp</td><td>22</td><td>25</td><td>22</td></tr>
-        <tr><td>Water-temp trend</td><td>5</td><td>8</td><td>5</td></tr>
-        <tr><td>Pressure 24h</td><td>13 (falling-pressure bonus)</td><td>8</td><td>7</td></tr>
-        <tr><td>Pressure 48h</td><td>5</td><td>4</td><td>3</td></tr>
-        <tr><td>Wind speed</td><td>15</td><td>10</td><td>10</td></tr>
-        <tr><td>Wind direction (generic onshore)</td><td>10</td><td>5</td><td>5</td></tr>
-        <tr><td>Precip 24h</td><td>3 (rain-tolerant)</td><td>5</td><td>4 (positive at low mm)</td></tr>
-        <tr><td>Precip 48h</td><td>2</td><td>5</td><td>4</td></tr>
-        <tr><td>Cloud cover (overcast favoured)</td><td>15</td><td>12 (partly best)</td><td>18 (low-light favoured)</td></tr>
-        <tr><td>Air temp</td><td>2</td><td>4</td><td>2</td></tr>
-        <tr><td>Air-temp trend</td><td>3</td><td>4</td><td>3</td></tr>
-        <tr><td>Time-of-day</td><td>5</td><td>10</td><td>17 ✓</td></tr>
-        <tr><td colspan="3"><strong>Total</strong></td><td><strong>100</strong></td></tr>
+        <tr><td>Water temp</td><td>22</td><td>25</td><td>22</td><td>20</td><td>24</td></tr>
+        <tr><td>Water-temp trend</td><td>5</td><td>8</td><td>5</td><td>5</td><td>8</td></tr>
+        <tr><td>Pressure 24h</td><td>13†</td><td>8</td><td>7</td><td>7</td><td>8†</td></tr>
+        <tr><td>Pressure 48h</td><td>5</td><td>4</td><td>3</td><td>4</td><td>4</td></tr>
+        <tr><td>Wind speed</td><td>15</td><td>10</td><td>10</td><td>6</td><td>8</td></tr>
+        <tr><td>Wind direction (generic onshore)</td><td>10</td><td>5</td><td>5</td><td>3</td><td>5</td></tr>
+        <tr><td>Precip 24h</td><td>3</td><td>5</td><td>4‡</td><td>6</td><td>8‡</td></tr>
+        <tr><td>Precip 48h</td><td>2</td><td>5</td><td>4</td><td>5</td><td>6</td></tr>
+        <tr><td>Cloud cover</td><td>15§</td><td>12</td><td>18§</td><td>10</td><td>14§</td></tr>
+        <tr><td>Air temp</td><td>2</td><td>4</td><td>2</td><td>3</td><td>2</td></tr>
+        <tr><td>Air-temp trend</td><td>3</td><td>4</td><td>3</td><td>5</td><td>5</td></tr>
+        <tr><td>Time-of-day</td><td>5</td><td>10</td><td>17 ✓</td><td>6</td><td>8</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>100</strong></td><td><strong>100</strong></td><td><strong>100</strong></td><td><strong>100</strong></td><td><strong>100</strong></td></tr>
       </tbody>
     </table>
     <p>
+      † Hauki + lahna get a +10 falling-pressure bonus on the 24h score.<br>
+      ‡ Kuha + lahna have inverted precipitation polarity (light rain mildly
+      to strongly positive).<br>
+      § Hauki/kuha/lahna prefer overcast (cloud-positive scorers); siika +
+      ahven + särki use the partly-cloudy peak shape.
+    </p>
+    <p>
       Each species also has a <strong>season-window multiplier</strong> applied
-      before penalties: hauki (winter ×0.2, summer-water ×0.5), ahven (deep
-      winter ×0.2–0.5), kuha (closed Apr–May ×0, peak Jun 25 – Sep 30 ×1.0,
-      tail Oct ×0.6, off in winter ×0.1). And per-species critical penalties
-      mirroring siika's shape but with species-specific thresholds.
+      before penalties:
+    </p>
+    <ul>
+      <li><strong>Hauki</strong>: winter ×0.2, summer-water ×0.5.</li>
+      <li><strong>Ahven</strong>: deep winter ×0.2–0.5.</li>
+      <li><strong>Kuha</strong>: closed Apr–May ×0; peak Jun 25 – Sep 30 ×1.0; tail Oct ×0.6; winter ×0.1.</li>
+      <li><strong>Särki</strong>: deep winter ×0.15; spring ramp Apr ×0.7, autumn tail Nov ×0.5.</li>
+      <li><strong>Lahna</strong>: pre-15-May ×0.1; May ramp from 0.2→1.0 day-and-temp gated on water ≥14 °C; Jun–Aug ×1.0; Sep ×0.85; Oct ×0.4; winter ×0.1.</li>
+    </ul>
+    <p>
+      Per-species critical penalties also apply (e.g. lahna water &lt;10 °C
+      → ×0.1, kuha water &lt;10 °C → ×0.3). See <code>scoring.js</code>.
     </p>
 
     <h2>Generic shape: <code>triangular(v, hardLo, optLo, optHi, hardHi)</code></h2>
@@ -589,6 +776,34 @@ dt &lt; −5       →  20 (cold shock)</pre>
       computed from a sinusoidal declination approximation at 60.4°N. The
       best 2-hour window is found by sliding a 2-hour mean across all 24
       hours of the day.
+    </p>
+
+    <h2>Hatch budget multiplier (siika only)</h2>
+    <p>
+      The siika scorer applies an additional multiplier based on cumulative
+      warm-water-day count this calendar year. Captures the fact that the
+      polychaete (harvasukamato) hatch is a one-shot ~3-week event, after
+      which the shore food chain decouples regardless of current temperature.
+    </p>
+    <p>
+      The cumulative count is computed by <code>scripts/refresh.mjs</code>
+      from Open-Meteo Marine SST (past_days=92): days since Jan 1 where
+      SST ≥ 6 °C. Marine SST runs ~2 °C warm vs. shore, so 6 °C marine ≈
+      4 °C shore — the threshold for sediment-warming-driven worm
+      emergence. Applied as a pre-penalty multiplier:
+    </p>
+    <pre>cumulative warm days  →  multiplier
+0–5                   →  0.5    (pre-hatch, worms not yet up)
+6–10                  →  0.8    (hatch ramping up)
+11–18                 →  1.0    (peak hatch — prime window)
+19–25                 →  0.7    (hatch winding down)
+26–35                 →  0.4    (food chain decoupling)
+36+                   →  0.15   (effectively over)</pre>
+    <p>
+      If the model finds no warm day on record yet (cold spring,
+      <code>HATCH_BUDGET = null</code>), the multiplier defaults to 1.0 —
+      no penalty. The displayed penalty string ("Sesonki ohi" etc.)
+      surfaces the cumulative day count so the user can sanity-check.
     </p>
 
     <h2>Future-day water-temperature projection</h2>

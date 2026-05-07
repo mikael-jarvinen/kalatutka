@@ -499,6 +499,8 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; color: #0a3d62; }
 .hour-cell.peak-hauki { background: #f4a261; }
 .hour-cell.peak-ahven { background: #f4d35e; }
 .hour-cell.peak-kuha  { background: #b497d6; color: white; }
+.hour-cell.peak-sarki { background: #ffb95a; }
+.hour-cell.peak-lahna { background: #8e7cc3; color: white; }
 
 /* --- Responsive --- */
 
