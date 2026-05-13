@@ -229,8 +229,12 @@ Spawning at 60.4°N: late May – mid-June, in shallow (1–3 m) sheltered bays
 with hard-rubble or root-mat bottoms, water at **12–15 °C**. Males guard
 nests 1–2 weeks; both sexes feed minimally during the spawn itself.
 
-**Closed season for kuha in Finnish saltwater: April 1 – May 31.**
-Minimum size in coastal waters: **42 cm** (since 2019).
+**No regulatory closed season for kuha fishing in Finnish saltwater.**
+Minimum size in coastal waters: **42 cm** (since 2019) — undersized fish must
+be released. The April–May dip in the model is purely biological: schools are
+still in deep basins, water too cold (kuha optimum 18–22 °C), pre-spawn
+staging means feeding is minimal. Captured by the season gate + the
+`<10 °C` cold-water critical penalty, not a regulatory gate.
 
 Practical shore season:
 - **Pre-spawn staging (mid-May):** moving inshore but largely off-limits

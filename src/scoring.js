@@ -581,16 +581,22 @@ function seasonGateAhven(dateStr, projectedWater) {
   return 1;
 }
 
-/** Kuha: closed Apr 1 – May 31, peak Jun 15 – Sep, taper through Oct, off in winter. */
+/**
+ * Kuha: biological season gate. No regulatory closed season for fishing —
+ * Finnish saltwater only enforces a 42 cm minimum size. The April/May dip is
+ * purely biological (fish still in deep basins, water too cold, spawning
+ * staging). Cold-water critical penalty in scoreKuha handles the rest.
+ */
 function seasonGateKuha(dateStr, projectedWater) {
   const m = dateMonth(dateStr);
-  // Closed season for kuha in Finnish saltwater
-  if (m === 4 || m === 5) return 0;
+  if (m === 4) return 0.3;       // April: schools still in deep basins
+  if (m === 5) return 0.5;       // May: pre-spawn staging, undersized fish present
   if (m === 6) {
-    // Soft ramp June 15 -> June 25
+    // Spawning Jun 1 – Jun 20, feeding paused during spawn act itself.
+    // Post-spawn feeding ramps in late June.
     const day = Number(dateStr.slice(8, 10));
-    if (day < 15) return 0.2;
-    if (day < 25) return 0.6;
+    if (day < 15) return 0.55;
+    if (day < 25) return 0.8;
     return 1;
   }
   if (m === 7 || m === 8 || m === 9) return 1;
@@ -990,9 +996,7 @@ export function scoreKuha(idx, waterTempToday, waterTrend7d) {
   const seasonMult = seasonGateKuha(dateStr, projectedWater);
   const penalties = [];
   let mult = seasonMult;
-  if (seasonMult === 0) {
-    penalties.push("Rauhoitusaika 1.4.–31.5.");
-  } else if (seasonMult < 1) {
+  if (seasonMult < 1) {
     penalties.push("Kausi: ×" + seasonMult.toFixed(2));
   }
   if (projectedWater < 10) {

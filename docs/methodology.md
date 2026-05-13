@@ -278,7 +278,7 @@ rationale, see `docs/research-rantakalastus.md` and
 
 - **Hauki**: months 1–3 → 0.2; if `projectedWater > 19 °C` → 0.5; otherwise 1.
 - **Ahven**: months 1–2 → 0.2; months 3 + 12 → 0.5; otherwise 1.
-- **Kuha**: months 4–5 → **0** (closed season in Finnish saltwater); month 6 day <15 → 0.2, day 15–24 → 0.6; months 7–9 → 1; month 10 → 0.6; months 11, 12, 1–3 → 0.1.
+- **Kuha**: month 4 → 0.3 (schools in deep basins); month 5 → 0.5 (pre-spawn staging); month 6 day <15 → 0.55 (peak spawn, feeding paused), day 15–24 → 0.8 (post-spawn ramp); months 7–9 → 1; month 10 → 0.6; months 11, 12, 1–3 → 0.1. No regulatory closed season — Finnish saltwater enforces only a 42 cm minimum size; undersized fish must be released.
 - **Särki**: months 1–2 → 0.15; months 3 + 12 → 0.4; month 4 → 0.7; month 11 → 0.5; otherwise 1.
 - **Lahna**: months 1–4 → 0.1; month 5 → ramp from 0.2 (May 1) to 1.0 (May 20), gated by `projectedWater ≥ 14 °C`; months 6–8 → 1; month 9 → 0.85; month 10 → 0.4; months 11–12 → 0.1.
 
