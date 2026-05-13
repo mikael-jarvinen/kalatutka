@@ -502,6 +502,59 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; color: #0a3d62; }
 .hour-cell.peak-sarki { background: #ffb95a; }
 .hour-cell.peak-lahna { background: #8e7cc3; color: white; }
 
+/* Spot picker + bloom toggle (Phase 4). */
+.spot-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+}
+.spot-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.spot-row label { font-weight: 600; font-size: 12px; color: #0a3d62; }
+.spot-row select {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+}
+.bloom-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+}
+.bloom-toggle input { margin: 0; cursor: pointer; }
+.spot-note {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Bait recommendation block per species detail (Phase 4). */
+.bait-rec {
+  background: #f8fafc;
+  border-left: 3px solid #0a3d62;
+  padding: 8px 12px;
+  margin: 6px 0 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.bait-rec-header { font-weight: 600; color: #0a3d62; margin-bottom: 2px; }
+.bait-rec-detail { color: #334155; font-size: 12px; }
+.bait-rec-secondary { color: #64748b; font-size: 12px; margin-top: 4px; }
+.bait-rec-hint { color: #475569; font-size: 12px; font-style: italic; margin-top: 4px; }
+.bait-rec.no-fish { border-left-color: #e63946; }
+.bait-rec.no-fish .bait-rec-header { color: #b91c1c; }
+
 /* --- Responsive --- */
 
 @media (max-width: 640px) {

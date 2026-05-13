@@ -5,7 +5,7 @@
 
 import {
   WEATHER, HOURLY, TODAY, FETCHED_AT,
-  MARINE, FOGLO, OVERRIDE_DEFAULTS
+  MARINE, FOGLO, OVERRIDE_DEFAULTS, WIND_HISTORY
 } from "./data/data.js";
 
 import {
@@ -19,6 +19,8 @@ import {
   factorBarColor,
   SPECIES_META
 } from "./scoring.js";
+import { SPOTS, DEFAULT_SPOT } from "./spots.js";
+import { recommendBait, deriveTurbidity } from "./baits.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -27,13 +29,66 @@ import {
 const TODAY_IDX = WEATHER.time.indexOf(TODAY);
 const SPECIES = ["sarki", "lahna"];
 
+const STORAGE_KEY = "kalatutka.pohjaonki";
+
+function loadPersisted() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch { return {}; }
+}
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      spot: state.spot, bloom: state.bloom
+    }));
+  } catch {}
+}
+
+const persisted = loadPersisted();
 const state = {
   /** @type {"marine"|"foglo"|"override"} */
   source: "foglo",
   overrideTemp: OVERRIDE_DEFAULTS.temp,
   overrideTrend: OVERRIDE_DEFAULTS.trend7d,
-  selectedIdx: TODAY_IDX
+  selectedIdx: TODAY_IDX,
+  // Pohjaonki defaults to Pansio (the user's best lahna spot in Turku area).
+  spot: persisted.spot && SPOTS[persisted.spot] ? persisted.spot : "pansio",
+  bloom: !!persisted.bloom
 };
+
+function scoreOpts() {
+  return { spot: state.spot, bloom: state.bloom };
+}
+
+function dayOfYearFor(dateStr) {
+  const d = new Date(dateStr + "T12:00:00Z");
+  const start = Date.UTC(d.getUTCFullYear(), 0, 1);
+  return Math.floor((d.getTime() - start) / 86400_000) + 1;
+}
+
+function conditionsFor(species, idx, date, temp) {
+  const precip24 = WEATHER.precip[idx];
+  const precip48 = (idx > 0 ? WEATHER.precip[idx - 1] : 0)
+                 + (idx > 1 ? WEATHER.precip[idx - 2] : 0);
+  const windHistorySum = WIND_HISTORY?.perDay?.[date] ?? null;
+  const turbidity = deriveTurbidity({
+    bloomFlag: state.bloom,
+    windHistorySum,
+    precip24,
+    precip48
+  });
+  const win = bestHourWindow(species, idx, temp, getActiveTrend(), scoreOpts());
+  return {
+    waterTempC: temp,
+    cloudPct: WEATHER.cloudMean[idx],
+    windMs: WEATHER.windMax[idx] / 3.6,
+    hourOfDay: win.startHour,
+    dayOfYear: dayOfYearFor(date),
+    turbidity
+  };
+}
 
 function getActiveTemp() {
   if (state.source === "override") return state.overrideTemp;
@@ -109,10 +164,10 @@ function renderDayGrid() {
 
   for (let i = TODAY_IDX; i < Math.min(TODAY_IDX + 7, WEATHER.time.length); i++) {
     const d = WEATHER.time[i];
-    const { best, scores } = scorePohjaonki(i, temp, trend);
+    const { best, scores } = scorePohjaonki(i, temp, trend, scoreOpts());
     const bestTotal = scores[best].total;
     const bestMeta = SPECIES_META[best];
-    const bestWindow = bestHourWindow(best, i, temp, trend);
+    const bestWindow = bestHourWindow(best, i, temp, trend, scoreOpts());
 
     const miniLine = SPECIES.map(sp => {
       const initial = SPECIES_META[sp].label[0];
@@ -165,8 +220,9 @@ function renderDetail() {
 
 function renderSpeciesBlock(species, idx, date, temp, trend, hourly) {
   const meta = SPECIES_META[species];
-  const result = scoreSpecies(species, idx, temp, trend);
-  const window = bestHourWindow(species, idx, temp, trend);
+  const result = scoreSpecies(species, idx, temp, trend, scoreOpts());
+  const window = bestHourWindow(species, idx, temp, trend, scoreOpts());
+  const baitRec = recommendBait(species, conditionsFor(species, idx, date, temp));
   const peaks = peakHoursForDay(species, date);
 
   let hourlyHTML = "";
@@ -222,6 +278,8 @@ function renderSpeciesBlock(species, idx, date, temp, trend, hourly) {
         result.penalties.join(" · ") + '</div>'
     : '';
 
+  const baitHTML = renderBaitRec(baitRec);
+
   return (
     '<section class="species-block">' +
       '<div class="species-header">' +
@@ -237,11 +295,40 @@ function renderSpeciesBlock(species, idx, date, temp, trend, hourly) {
         '</div>' +
       '</div>' +
       '<div class="tackle-hint">Vinkki: ' + meta.tackle + '</div>' +
+      baitHTML +
       hourlyHTML +
       penaltyHTML +
       factorsHTML +
     '</section>'
   );
+}
+
+function renderBaitRec(baitRec) {
+  if (!baitRec) return "";
+  if (!baitRec.primary) {
+    return '<div class="bait-rec no-fish">' +
+             '<div class="bait-rec-header">🚫 ' + baitRec.hint + '</div>' +
+           '</div>';
+  }
+  const p = baitRec.primary;
+  const productLine = (p.products && p.products.length) ? ' · <em>' + p.products[0] + '</em>' : '';
+  let html = '<div class="bait-rec">' +
+    '<div class="bait-rec-header">🎯 Tänään: ' + p.type +
+      (p.size && p.size !== "—" ? ' ' + p.size : '') +
+      (p.weight && p.weight !== "—" ? ' (' + p.weight + ')' : '') +
+    '</div>' +
+    '<div class="bait-rec-detail">' +
+      (p.color && p.color !== "—" ? 'Väri: ' + p.color : '') +
+      productLine +
+    '</div>';
+  if (baitRec.secondary) {
+    const s = baitRec.secondary;
+    const sProd = (s.products && s.products.length) ? ' (' + s.products[0] + ')' : '';
+    html += '<div class="bait-rec-secondary">Varalle: ' + s.type +
+            (s.size && s.size !== "—" ? ' ' + s.size : '') + sProd + '</div>';
+  }
+  html += '<div class="bait-rec-hint">' + baitRec.hint + '</div></div>';
+  return html;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,6 +376,33 @@ function setupSourceCards() {
   }
 }
 
+function setupSpotPicker() {
+  const picker = document.getElementById("spotPicker");
+  if (!picker) return;
+  picker.value = state.spot;
+  updateSpotNote();
+  picker.addEventListener("change", () => {
+    state.spot = picker.value;
+    updateSpotNote();
+    persist();
+    render();
+  });
+}
+function updateSpotNote() {
+  const note = document.getElementById("spotNote");
+  if (note) note.textContent = SPOTS[state.spot]?.habitatNote || "";
+}
+function setupBloomToggle() {
+  const toggle = document.getElementById("bloomToggle");
+  if (!toggle) return;
+  toggle.checked = state.bloom;
+  toggle.addEventListener("change", () => {
+    state.bloom = toggle.checked;
+    persist();
+    render();
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
@@ -316,6 +430,8 @@ function init() {
 
   setupOverrideControls();
   setupSourceCards();
+  setupSpotPicker();
+  setupBloomToggle();
   render();
 }
 

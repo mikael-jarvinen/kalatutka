@@ -24,13 +24,33 @@ import {
 
 const TODAY_IDX = WEATHER.time.indexOf(TODAY);
 
+const STORAGE_KEY = "kalatutka.siika";
+function loadPersisted() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch { return {}; }
+}
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ bloom: state.bloom }));
+  } catch {}
+}
+const persisted = loadPersisted();
+
 const state = {
   /** @type {"marine"|"foglo"|"override"} */
   source: "override",
   overrideTemp: OVERRIDE_DEFAULTS.temp,
   overrideTrend: OVERRIDE_DEFAULTS.trend7d,
-  selectedIdx: TODAY_IDX
+  selectedIdx: TODAY_IDX,
+  bloom: !!persisted.bloom
 };
+
+function scoreOpts() {
+  return { bloom: state.bloom };
+}
 
 // ---------------------------------------------------------------------------
 // Source selection — picks which water-temp source feeds the scoring
@@ -106,7 +126,7 @@ function renderDayGrid() {
 
   for (let i = TODAY_IDX; i < Math.min(TODAY_IDX + 7, WEATHER.time.length); i++) {
     const d = WEATHER.time[i];
-    const { total, penalties } = scoreDay(i, temp, trend);
+    const { total, penalties } = scoreDay(i, temp, trend, scoreOpts());
     const card = document.createElement("button");
     card.className = "day-card" + (i === state.selectedIdx ? " selected" : "");
     card.style.background = scoreColor(total);
@@ -137,7 +157,7 @@ function renderWeekendCallout() {
   for (let i = TODAY_IDX; i < Math.min(TODAY_IDX + 7, WEATHER.time.length); i++) {
     const d = new Date(WEATHER.time[i] + "T12:00:00");
     if (d.getDay() === 0 || d.getDay() === 6) {
-      entries.push({ i, score: scoreDay(i, temp, trend).total, date: WEATHER.time[i] });
+      entries.push({ i, score: scoreDay(i, temp, trend, scoreOpts()).total, date: WEATHER.time[i] });
     }
   }
   if (entries.length === 0) { el.innerHTML = ""; return; }
@@ -166,7 +186,7 @@ function renderDetail() {
   const date = WEATHER.time[i];
   const temp = getActiveTemp();
   const trend = getActiveTrend();
-  const { total, baseScore, factors, penalties, mult } = scoreDay(i, temp, trend);
+  const { total, baseScore, factors, penalties, mult } = scoreDay(i, temp, trend, scoreOpts());
   const hourly = HOURLY[date];
 
   let hourlyHTML = "";
@@ -306,6 +326,7 @@ function init() {
 
   setupOverrideControls();
   setupSourceCards();
+  setupBloomToggle();
   render();
 }
 
@@ -313,6 +334,17 @@ function setupSourceCards() {
   for (const card of document.querySelectorAll(".source-card[data-source]")) {
     card.addEventListener("click", () => selectSource(card.dataset.source));
   }
+}
+
+function setupBloomToggle() {
+  const toggle = document.getElementById("bloomToggle");
+  if (!toggle) return;
+  toggle.checked = state.bloom;
+  toggle.addEventListener("change", () => {
+    state.bloom = toggle.checked;
+    persist();
+    render();
+  });
 }
 
 init();

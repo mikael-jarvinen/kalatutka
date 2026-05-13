@@ -562,8 +562,100 @@
       Lähteet ja laajempi tausta:
       <code>docs/research.md</code> (siika, FI),
       <code>docs/research-rantakalastus.md</code> (hauki/ahven/kuha, FI),
-      <code>docs/research-pohjaonki.md</code> (särki/lahna, FI) ja
-      <code>docs/methodology.md</code> (EN).
+      <code>docs/research-pohjaonki.md</code> (särki/lahna, FI),
+      <code>docs/methodology.md</code> (EN) ja
+      <code>docs/sources.md</code> (Phase 4 bibliography, EN).
+    </p>
+
+    <h2 id="phase4">🆕 Tarkennukset — mikä on muuttunut</h2>
+
+    <p>
+      Mallia on kalibroitu käytännön kalastuskokemusten perusteella. Näistä
+      lisätekijöistä jokaisella on viitatut tieteelliset lähteet
+      (<code>docs/sources.md</code>):
+    </p>
+
+    <h3>🌬️ Tuulihistoria — pohjaveden nouseva­vaikutus</h3>
+    <p>
+      Useita päiviä jatkunut tuuli pohjoisesta/koillisesta puhaltaa lämmintä
+      pintavettä pois ja nostaa kylmää syvävettä rantaan. Saaliskala
+      vetäytyy, eikä yksi suotuisa SW-päivä riitä kääntämään tilannetta —
+      ranta tarvitsee päiviä lämmetä takaisin. Malli laskee 72 tunnin
+      tuulihistorian onshore-komponentin ja rankaisee tasaisia
+      offshore-jaksoja (kerroin 0.55–1.0).
+    </p>
+
+    <h3>🐟 Syöttikalat (silakka, kuore)</h3>
+    <p>
+      Hauki ja kuha seuraavat syöttikalojen kutuvaelluksia rannalle.
+      Saaristomeren <strong>silakan rantakutu</strong> kestää tyypillisesti
+      toukokuun puolivälistä kesäkuun puoliväliin, kuoreen rantarynnistys
+      vielä aiemmin. Tällöin pedot syövät matalalta vaikka vesi olisi
+      vasta lämpiämässä. Malli aktivoi GDD-laskennalla bonuksen
+      (kerroin 1.07–1.15) silakan/kuoreen rannallaolon aikana.
+    </p>
+
+    <h3>🧠 Vesilämmön muisti (14 vrk huippu)</h3>
+    <p>
+      Ahvenen kudunjälkeinen syöntipiikki tapahtuu 7–14 päivää sen
+      jälkeen kun vesi nousi ensimmäisen kerran yli 10 °C — eli sillä
+      hetkellä kun vesi voi jo viiletä. Pelkkä 7 vrk:n trendi ei tätä
+      näe, mutta 14 vrk:n huippulämpö ja sen ikä paljastavat sen.
+      Kuhalle sama logiikka erottaa kudun (×0.55, syönti tauolla)
+      kudun jälkeisestä syömäpurkauksesta (×1.15).
+    </p>
+
+    <h3>🌅 Hauen syksyn päivänpituus­bonus</h3>
+    <p>
+      Hauen syksyaktiivisuus ei seuraa pelkkää veden lämpötilaa vaan
+      myös päivänpituutta — lyhenevät päivät käynnistävät melatoniinin
+      kautta talvenedellisen syöntipuuskan. Malli antaa hauelle pienen
+      bonuksen (enintään +25 %) syys–marraskuussa kun päivänpituus
+      laskee alle 12 tunnin.
+    </p>
+
+    <h3>🟢 Leväkukinta (käyttäjän valinta)</h3>
+    <p>
+      Sinileväkukinta heinä–elokuussa sotkee veden ja sulkee
+      näkösyöjien (siika, ahven, särki) bittien. Jos näet levää rannalla,
+      raksaa rasti yläosan ruutuun — malli pudottaa sight-feedereiden
+      pisteet ja antaa kuhalle pienen bonuksen sumeasta vedestä.
+    </p>
+
+    <h3>📍 Paikan valinta — kalastuspaikkakohtainen kalibrointi</h3>
+    <p>
+      Saaristomeressä eri rannat sopivat eri kaloille:
+    </p>
+    <ul>
+      <li><strong>Saaronniemi</strong> — siika ja ahven, mediocre lahnalle</li>
+      <li><strong>Ruissalon sisälahti</strong> — hauki ja särki, kasvustoissa</li>
+      <li><strong>Pansio</strong> — lahna ja kuha, pehmeäpohjainen lahti</li>
+      <li><strong>Aurajoen suu</strong> — lahna, kuha, särki, sumea vesi</li>
+      <li><strong>Hirvensalon itäranta</strong> — kuha ja hauki, väyläranta</li>
+    </ul>
+    <p>
+      Paikan valinta vaikuttaa tuulen suunnan tulkintaan (mikä on
+      "onshore" tuuli) ja antaa lajille habitat-kertoimen (0.2–1.25).
+      Siikasivu pysyy lukittuna Saaronniemeen.
+    </p>
+
+    <h3>🎯 "Tänään-vinkki" — viehekohtaiset suositukset</h3>
+    <p>
+      Jokaisen lajin yksityiskohtapaneelissa näkyy nyt myös
+      <strong>kohdennettu viehesuositus</strong> päivän olosuhteille:
+      veden lämpötila, pilvisyys, tuuli, ja parhaan tunnin valo ohjaavat
+      suositusta. Esimerkit:
+    </p>
+    <ul>
+      <li>Kylmä kevät, kirkas, tyyni → suspending jerkbait (Rapala Husky Jerk 12 cm) ahvenvärillä</li>
+      <li>Lämmin kesäilta, pilvinen → kuhalle Husky Jerk 12 cm pitkillä pausseilla</li>
+      <li>Aallon nostama sameus → särjelle kirkas pieni jigi tärinällä</li>
+    </ul>
+    <p>
+      Suositukset perustuvat suomalaisten kalastusalan julkaisujen
+      kokemustietoon (kalassa.net, Vapaa-ajan Kalastaja, Kalastajan
+      Kanava, Ruthless Fishing). Tarkat lähteet:
+      <code>docs/sources.md</code> §7.
     </p>
   </section>
 

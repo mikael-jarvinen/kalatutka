@@ -198,6 +198,154 @@ Folding all five into one page would also produce visually overwhelming day card
 
 ---
 
+## D15. 3-day wind-shore upwelling multiplier
+
+**Decision:** Phase 4 adds a 72-hour rolling onshore-wind-component sum
+(`WIND_HISTORY` in `data.js`) and a species-sensitive multiplier (0.55–1.0)
+on the day score.
+
+**Rationale:** Sustained NE-through-E winds at the SW-opening Finnish coast
+drive Ekman transport and surface-water upwelling. Cited literature (MDPI
+*Water* 2023; Lehmann & Myrberg 2008; FMI public upwelling page) shows
+predator catch rates drop measurably during upwelling events; effect
+persists 2–5 days after wind reverses. The original model saw only today's
+wind and missed this entirely — the same path-dependence blind spot that
+required the siika hatch budget. See `docs/sources.md` §1.
+
+**Trade-off:** Calibration of the curve (0..-700 m/s·h → 1.0..0.55) is a
+single piecewise-linear function with no per-spot tuning. The strongest
+case is Saaronniemi (SW-facing); inner-bay spots experience upwelling
+differently. Per-spot upwelling tuning is a future refinement.
+
+---
+
+## D16. Bait-fish phenology multiplier (silakka + kuore)
+
+**Decision:** Phase 4 tracks cumulative growing-degree-days above 4 °C
+since Apr 1 (`GDD` in `data.js`) and applies bonus multipliers (×1.07–
+×1.15) for hauki + kuha + (small for) ahven when GDD falls in the
+silakka/kuore inshore-spawning windows.
+
+**Rationale:** Forage-fish aggregations near shore drive predator activity
+beyond what water-temperature comfort alone explains. Saaristomeri silakka
+spawning windows are well-documented (UTU Herring Project; ICES 2024 stock
+report). Same structural fix as siika hatch budget: a prey-availability
+gate that overrides parts of the species comfort window. See
+`docs/sources.md` §2.
+
+**Trade-off:** GDD-based proxy is approximate — actual silakka arrival
+varies year to year and is patchy spatially. We'll know the calibration is
+off if the user catches pike from shore in mid-summer at scores the model
+gives below 50 — that signals silakka were present but the GDD model
+missed them.
+
+---
+
+## D17. Water-temperature memory (14-day max + days-since-peak)
+
+**Decision:** Phase 4 tracks `tMax14d` and `daysSinceTMax14d` per forecast
+day (`WATER_TEMP_HISTORY` in `data.js`). Used by `ahvenPostSpawnBoost`
+(×1.15 in 7–14d-post-peak window after T crossed 10 °C) and
+`kuhaSpawnPhase` (spawn-act ×0.55 vs post-spawn ×1.15).
+
+**Rationale:** A 7-day trend sees slope but not peaks. Ahven post-spawn
+feeding peaks 7–14 days *after* the trigger temperature crossing, by which
+time the water may already be cooling — the trend alone misses it. Kuha
+feeding crashes during the 5-day spawn act and explodes for 2–3 weeks
+post-spawn; conflating both phases into a single date-+-temp gate is
+biologically wrong. See `docs/sources.md` §3.
+
+**Trade-off:** Requires `past_days=92` on Open-Meteo Marine for the
+historical SST series, which we already pull for the hatch budget. No new
+API.
+
+---
+
+## D18. Hauki autumn photoperiod bonus
+
+**Decision:** Phase 4 adds a deterministic photoperiod-driven multiplier
+(up to +25%) for hauki between Sep 1 and Dec 1, scaled by how much
+daylight has shortened below 12 hours at the latitude.
+
+**Rationale:** Pike pre-winter feeding aggression is co-driven by melatonin
+signaling triggered by shortening daylight, not just water cooling
+(Cuesta et al. 2017; Falcón et al. on pike pineal organ). In warm
+autumns (water still 12 °C in mid-October) the date-based gate fires
+before the temp-based one would — and that's biologically correct.
+See `docs/sources.md` §4.
+
+**Trade-off:** Untestable until autumn. Cheap and deterministic — no new
+data dependency, computed from existing sun-hour approximation.
+
+---
+
+## D19. Algae bloom user toggle (manual override)
+
+**Decision:** Phase 4 adds a `bloomToggle` checkbox to all pages,
+persisted to localStorage. When checked, applies per-species multipliers:
+siika/ahven 0.6, sarki 0.7, kuha 1.1, hauki/lahna 1.0.
+
+**Rationale:** Cyanobacteria blooms in Saaristomeri (Jul–Aug) shut down
+sight-feeders (ahven, siika, sarki) and modestly favour turbidity-positive
+species (kuha). SYKE provides weekly bloom maps but the data is too
+coarse-resolution and weekly-cadence to automate as a daily input. A
+manual user-toggled flag is the right fit. See `docs/sources.md` §5.
+
+**Trade-off:** User must remember to toggle. Could auto-clear after N days
+to avoid stale state, but that's complexity vs benefit.
+
+---
+
+## D20. Per-spot wind direction + habitat suitability
+
+**Decision:** Phase 4 adds `src/spots.js` with 5 named Saaristomeri
+shore-fishing spots (Saaronniemi, Ruissalon sisälahti, Pansio,
+Aurajoen suu, Hirvensalo itäranta), each defining `windDirOnshore` and a
+per-species `suitability` multiplier. Rantakalastus + pohjaonki pages
+expose a spot dropdown. **Siika page stays locked to Saaronniemi** — its
+biology (sandy/gravel substrate, SW-cape geometry) is calibrated for that
+specific habitat.
+
+**Rationale:** The previous generic onshore wind direction (180–270°) was
+fine for one location but wrong for inner bays opening N/E (Pansio,
+Hirvensalo, Aurajoki mouth). Habitat suitability per species is a
+multiplicative overlay (Saaronniemi for lahna = 0.4; Pansio for lahna =
+1.25). Sources: Finnish angling press (kalapaikka, Vapaa-ajan
+Kalastaja), Luke coastal zander studies, Engstedt et al. on Baltic pike.
+See `docs/sources.md` §6.
+
+**Trade-off:** Five fixed spots cover the user's actual fishing range
+but aren't user-extensible. If the user wants to model a new spot
+(e.g. Naantali, Kakskerta), it requires adding an entry to `spots.js`.
+Not a UI editor — keeping it static and source-controlled is appropriate
+for one user with a known fishing radius.
+
+---
+
+## D21. Condition-aware bait recommendation engine
+
+**Decision:** Phase 4 adds `src/baits.js` with `BAIT_RULES` per species —
+ordered, first-match-wins predicates over `{ waterTempC, cloudPct, windMs,
+hourOfDay, dayOfYear, turbidity }`. Detail panel renders a "🎯 Tänään"
+block per species with primary lure type/size/color, specific Finnish
+product, optional secondary, and a Finnish-language hint.
+
+**Rationale:** A score answers "should I fish?" but the user's next
+question is "what should I throw?". The existing `tackle` string per
+species is condition-agnostic; the new engine makes recommendations that
+shift with the day's actual conditions and the time-of-day the user will
+fish. Sources: Finnish angling press (kalassa.net, Vapaa-ajan Kalastaja,
+Kalastajan Kanava, Ruthless Fishing, Kuhamaa, etc.). See
+`docs/sources.md` §7.
+
+**Trade-off:** The matrix is declarative data, not learned. If a specific
+recommendation systematically underperforms (the user catches more on a
+different lure than the engine suggests), the rule must be edited
+manually. A future catch-log + lure-attribution feedback loop would let
+the engine self-tune, but that's well outside Phase 4.
+
+---
+
 ## Open decisions / TODOs
 
 - Choice of test runner (vitest vs node --test vs ...) — not yet decided.

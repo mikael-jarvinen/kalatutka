@@ -299,6 +299,126 @@ function buildMarine(raw, today) {
  *   null when there's no warm day on record yet (cold spring) — caller treats
  *   this as "season hasn't started, score normally".
  */
+/**
+ * Compute the 3-day wind-shore upwelling index per forecast day.
+ *
+ * For each forecast date D, sums the signed onshore-component of hourly wind
+ * over the 72 h ending at midnight of D:
+ *   onshore_component(deg) = cos((deg - 225) * π/180)   // for Saaronniemi default
+ *   contribution_h = onshore_component(windDir_h) * windSpeed_h_in_ms
+ *   sum_D = Σ contribution_h over 72 h
+ *
+ * Positive sum = sustained onshore (warm shore, fish in close).
+ * Negative sum = sustained offshore (cold-water upwelling, predator catches
+ * collapse). The scorer maps the magnitude into a 0.55–1.0 multiplier.
+ *
+ * Mechanism: Ekman transport pushes surface water offshore on a SW-opening
+ * coast when wind blows from NE; cold deep water surfaces and stays for days.
+ * Cited in docs/sources.md §1.
+ *
+ * Output: { perDay: { [date]: signedSum } }, signedSum in (m/s) units summed
+ * over 72 hours. We bake the raw sum; multiplier curve lives in scoring.js
+ * so it can be tuned without re-running the refresh.
+ */
+function buildWindHistory(rawWeather, spotOnshoreDir = 225) {
+  const h = rawWeather.hourly;
+  // Index hours by their start time for fast 72-h-window lookups.
+  const hours = h.time.map((ts, i) => ({
+    time: new Date(ts).getTime(),
+    speedMs: h.wind_speed_10m[i] / 3.6,
+    onshoreComponent: Math.cos((h.wind_direction_10m[i] - spotOnshoreDir) * Math.PI / 180)
+  }));
+
+  // For each unique forecast date, compute the 72-h sum ending at midnight.
+  const dates = [...new Set(h.time.map(t => t.slice(0, 10)))].sort();
+  const perDay = {};
+  const window = 72 * 3600_000;
+  for (const date of dates) {
+    const endTime = new Date(date + "T00:00:00").getTime();
+    const startTime = endTime - window;
+    let sum = 0;
+    for (const hour of hours) {
+      if (hour.time >= startTime && hour.time < endTime) {
+        sum += hour.onshoreComponent * hour.speedMs;
+      }
+    }
+    perDay[date] = Math.round(sum);
+  }
+  return { perDay };
+}
+
+/**
+ * 14-day water-temperature memory per forecast day.
+ *
+ * For each forecast date D, returns:
+ *   - tMax14d: max Marine SST in the 14 days ending at D
+ *   - daysSinceTMax14d: number of days between D and the date of that max
+ *
+ * Used by scoring.js to detect ahven post-spawn feeding peak (7–14 days
+ * after T first crosses 10 °C) and to split kuha "spawn act" vs.
+ * "post-spawn recovery". Cited in docs/sources.md §3.
+ */
+function buildWaterTempHistory(rawMarine, weatherDates) {
+  const times = rawMarine.daily.time;
+  const sst = rawMarine.daily.sea_surface_temperature_mean;
+  // Build a date → sst lookup for O(1) access.
+  const byDate = {};
+  for (let i = 0; i < times.length; i++) {
+    if (sst[i] != null) byDate[times[i]] = sst[i];
+  }
+
+  const perDay = {};
+  for (const D of weatherDates) {
+    let tMax = -Infinity;
+    let tMaxDate = null;
+    for (let back = 0; back < 14; back++) {
+      const d = addDays(D, -back);
+      const v = byDate[d];
+      if (v != null && v > tMax) {
+        tMax = v;
+        tMaxDate = d;
+      }
+    }
+    if (tMaxDate == null) {
+      perDay[D] = null;
+      continue;
+    }
+    const daysSinceTMax = Math.round(
+      (new Date(D + "T00:00:00").getTime() - new Date(tMaxDate + "T00:00:00").getTime())
+      / 86400_000
+    );
+    perDay[D] = { tMax14d: round1(tMax), daysSinceTMax14d: daysSinceTMax };
+  }
+  return { perDay };
+}
+
+/**
+ * Growing-degree-days above 4 °C, accumulated from Apr 1 of the current
+ * calendar year through each forecast date.
+ *
+ * Used by scoring.js to gate bait-fish phenology windows (silakka spawning
+ * approx GDD 250–450 → predator bonus). Cited in docs/sources.md §2.
+ */
+function buildGdd(rawMarine, today) {
+  const times = rawMarine.daily.time;
+  const sst = rawMarine.daily.sea_surface_temperature_mean;
+  const year = Number(today.slice(0, 4));
+  const aprStart = `${year}-04-01`;
+
+  const perDay = {};
+  let running = 0;
+  for (let i = 0; i < times.length; i++) {
+    const d = times[i];
+    if (d < aprStart) continue;
+    if (Number(d.slice(0, 4)) !== year) continue;
+    const v = sst[i];
+    if (v == null) continue;
+    running += Math.max(0, v - 4);
+    perDay[d] = Math.round(running);
+  }
+  return { perDay };
+}
+
 function buildHatchBudget(raw, today, weatherDates) {
   const times = raw.daily.time;
   const sst = raw.daily.sea_surface_temperature_mean;
@@ -356,7 +476,7 @@ function round1(n) { return Math.round(n * 10) / 10; }
 // Output: render data.js
 // ---------------------------------------------------------------------------
 
-function renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo, hatchBudget }) {
+function renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo, hatchBudget, windHistory, waterTempHistory, gdd }) {
   const j = (v) => JSON.stringify(v);
   const arr = (label, v) => `  ${label}: ${j(v)}`;
   const weatherBody = [
@@ -441,6 +561,34 @@ export const FOGLO = ${j(foglo)};
 export const HATCH_BUDGET = ${j(hatchBudget)};
 
 /**
+ * 3-day wind-shore upwelling index per forecast day. Negative values =
+ * sustained offshore wind (cold-water upwelling pulled cold deep water to
+ * shore, predator catches collapse). Positive = sustained onshore (warm
+ * shore, fish in close). Computed from hourly wind data over the 72 h
+ * ending at each forecast day's midnight. Scorer in scoring.js maps the
+ * magnitude into a 0.55–1.0 multiplier. See docs/sources.md §1.
+ */
+export const WIND_HISTORY = ${j(windHistory)};
+
+/**
+ * 14-day water-temperature memory per forecast day. \`tMax14d\` is the
+ * maximum Marine SST over the 14 days ending at the date; \`daysSinceTMax14d\`
+ * tells how recently it occurred. Used by ahven post-spawn detection (peak
+ * 7–14 days after T crossed 10 °C) and kuha spawn-phase split (act vs.
+ * recovery). See docs/sources.md §3.
+ */
+export const WATER_TEMP_HISTORY = ${j(waterTempHistory)};
+
+/**
+ * Growing-degree-days above 4 °C since Apr 1 of the current calendar year,
+ * accumulated through each forecast date. Used to gate bait-fish phenology
+ * windows: silakka (Baltic herring) inshore spawning ~GDD 250–450, kuore
+ * (smelt) earlier ~GDD 100–200. When prey is present, hauki and kuha feed
+ * inshore even in suboptimal water. See docs/sources.md §2.
+ */
+export const GDD = ${j(gdd)};
+
+/**
  * Default override values used when the user first opens the app.
  * Seeded from FOGLO so the slider lands on something reasonable.
  */
@@ -485,9 +633,15 @@ async function main() {
   const hourly = buildHourly(rawWeather, today);
   const marine = buildMarine(rawMarine, today);
   const hatchBudget = buildHatchBudget(rawMarine, today, weather.time);
+  const windHistory = buildWindHistory(rawWeather);
+  const waterTempHistory = buildWaterTempHistory(rawMarine, weather.time);
+  const gdd = buildGdd(rawMarine, today);
   const foglo = buildFoglo(fogloValues);
 
-  const dataJs = renderDataJs({ fetchedAt, today, weather, hourly, marine, foglo, hatchBudget });
+  const dataJs = renderDataJs({
+    fetchedAt, today, weather, hourly, marine, foglo,
+    hatchBudget, windHistory, waterTempHistory, gdd
+  });
   const snapshotJson = JSON.stringify({
     fetched: fetchedAt,
     today,
@@ -509,6 +663,12 @@ async function main() {
   } else {
     console.log(`[refresh] hatch budget: no warm day on record yet (cold spring)`);
   }
+  console.log(`[refresh] wind history (today): ${windHistory.perDay[today]} m/s·h over 72h (positive=onshore, negative=offshore/upwelling)`);
+  const wtToday = waterTempHistory.perDay[today];
+  if (wtToday) {
+    console.log(`[refresh] water-temp memory (today): tMax14d=${wtToday.tMax14d}°C, ${wtToday.daysSinceTMax14d}d ago`);
+  }
+  console.log(`[refresh] GDD (today): ${gdd.perDay[today]} since Apr 1`);
 }
 
 main().catch(err => {

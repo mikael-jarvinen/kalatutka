@@ -58,21 +58,37 @@ docs/
   methodology.md     full scoring algorithm spec — single source of truth for scoring logic
   decisions.md       design decisions with rationale
   data-sources.md    API endpoints, params, FMI station coverage notes
+  sources.md         Phase 4 bibliography — every new factor cited
+  research.md             siika (FI, original)
+  research-rantakalastus.md  hauki / ahven / kuha (FI)
+  research-pohjaonki.md      sarki / lahna (FI)
 src/
-  index.html         forecast page — DOM, source-card buttons, override controls
+  index.html         redirect stub (season-aware → siika/pohjaonki/rantakalastus)
+  siika.html         siika forecast page
+  rantakalastus.html hauki/ahven/kuha multi-species forecast
+  pohjaonki.html     sarki/lahna multi-species forecast
   research.html      research page with two tabs (FI angler science, EN algorithm spec)
   styles.css         all CSS, light-mode, no framework
-  app.js             forecast renderer + state; listens to override controls
+  app.js             siika renderer + state
+  rantakalastus.js   rantakalastus renderer + state (spot picker, bloom toggle, bait rec)
+  pohjaonki.js       pohjaonki renderer + state (same as above)
   research.js        tab switching + snapshot-timestamp injection
-  scoring.js         exported pure functions — triangular(), scoreDay(), all sub-scorers
+  redirect.js        season-aware landing redirect
+  scoring.js         exported pure functions — triangular(), scoreDay(), all species scorers,
+                     Phase 4 multipliers (upwelling, baitfish phenology, T-memory, photoperiod,
+                     bloom, spot suitability)
+  spots.js           Phase 4 — per-spot wind direction calibration + habitat suitability
+  baits.js           Phase 4 — condition-aware bait/lure recommendation engine
   data/
-    data.js          AUTO-GENERATED — exported constants WEATHER, HOURLY, MARINE, FOGLO,
-                     OVERRIDE_DEFAULTS, LOCATION, FETCHED_AT, TODAY
+    data.js          AUTO-GENERATED — WEATHER, HOURLY, MARINE, FOGLO, OVERRIDE_DEFAULTS,
+                     LOCATION, FETCHED_AT, TODAY, HATCH_BUDGET, WIND_HISTORY,
+                     WATER_TEMP_HISTORY, GDD
     snapshot.json    raw API responses (debugging / future use)
 scripts/
-  refresh.mjs        Node 22 ES-module that fetches the three APIs and rewrites data/data.js
+  refresh.mjs        Node 22 ES-module that fetches APIs and rewrites data/data.js
+                     (Phase 4 adds WIND_HISTORY, WATER_TEMP_HISTORY, GDD series)
 deploy/
-  nginx.conf         server block baked into Dockerfile.web
+  nginx.conf         server block baked into Dockerfile.web (Phase 4: no-cache on JS/CSS/HTML)
   refresh-entrypoint.sh   loop wrapper around refresh.mjs
   README.md          deployment runbook (how to build, run, reverse-proxy)
 ```

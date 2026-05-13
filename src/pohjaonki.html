@@ -66,12 +66,29 @@
       </div>
     </div>
 
+    <div class="spot-section">
+      <div class="spot-row">
+        <label for="spotPicker">📍 Paikka:</label>
+        <select id="spotPicker">
+          <option value="pansio">Pansion lahti</option>
+          <option value="aurajoen_suu">Aurajoen suu</option>
+          <option value="ruissalon_sisalahti">Ruissalon sisälahti</option>
+          <option value="hirvensalo_ita">Hirvensalon itäranta</option>
+          <option value="saaronniemi">Saaronniemi (Ruissalo)</option>
+        </select>
+        <label class="bloom-toggle">
+          <input type="checkbox" id="bloomToggle">
+          <span>🟢 Levää näkyvissä rannassa</span>
+        </label>
+      </div>
+      <div class="spot-note" id="spotNote">–</div>
+    </div>
+
     <div style="font-size:11px;color:#64748b;margin-top:10px">
       Aktiivinen: <strong id="activeSource">–</strong>.
       Lahna avautuu kunnolla vasta kun rantavesi nousee yli 15 °C
-      (tyypillisesti touko–kesäkuun vaihteessa).
-      <strong>Saaronniemen kärki on huonoa lahnavettä</strong> — mene Pansion
-      lahdelle, Aurajoen suulle tai Ruissalon sisälahdille.
+      (tyypillisesti touko–kesäkuun vaihteessa). Valitse paikka yltä —
+      lahnalle Pansio ja Aurajoen suu ovat parempia kuin Saaronniemi.
     </div>
   </div>
 

@@ -324,7 +324,111 @@ highest-mean span.
 
 ### Generic onshore wind direction (rantakalastus + pohjaonki)
 
-Unlike siika (Saaronniemi-specific 225° peak), the multi-species pages
-use a wider onshore band: best 180–270° (S/SW/W), worst at 0–45°
-(N/NE). Same `Math.round(100 × (1 − dist / 180))` shape, just a wider
-optimum.
+In Phase 3 this used a fixed wider onshore band. Phase 4 replaces it with
+**per-spot calibration** — see the next section.
+
+---
+
+## Phase 4 — additions and refinements
+
+Phase 4 was driven by real-world catch data showing the daily-snapshot
+model has multiple **path-dependent** blind spots: a single perfect day
+after a week of upwelling, bait-fish arrivals that pull predators inshore
+in suboptimal water, and post-spawn feeding peaks the 7-day trend can't
+detect. All citations in `docs/sources.md`.
+
+### 1. 3-day wind-shore upwelling multiplier
+
+For each forecast day, `refresh.mjs` writes `WIND_HISTORY.perDay[date]` —
+the signed sum over 72 h ending at midnight of (hourly wind speed in m/s
+× onshore-component) where onshore-component = `cos((windDir − 225°) ×
+π/180)` for the Saaronniemi default. Positive = sustained onshore;
+negative = sustained offshore (Ekman upwelling).
+
+Multiplier curve in `scoring.js:upwellingMultiplier`:
+
+```
+sum >= 0        → 1.0
+sum 0 to -700   → linear ramp 1.0 → 0.55, scaled by species sensitivity
+sum < -700      → 0.55 (capped)
+```
+
+Species sensitivity multipliers (lower = less affected):
+- hauki, ahven, kuha: 1.0
+- siika: 0.6 (hatch budget already partially captures this)
+- sarki: 0.5
+- lahna: 0.3 (lateral-line feeder, less reliant on visibility)
+
+### 2. Bait-fish phenology multiplier (silakka / kuore)
+
+`refresh.mjs` writes `GDD.perDay[date]` = growing-degree-days above 4 °C
+since Apr 1. `scoring.js:baitfishMultiplier`:
+
+- GDD ∈ [80, 200] (kuore inshore window) → ×1.07 for hauki
+- GDD ∈ [200, 450] (silakka inshore window) → ×1.15 for hauki, ×1.15 for
+  kuha, ×1.08 for ahven
+- Outside windows → ×1.0
+
+### 3. Water-temperature memory (14-day max)
+
+`refresh.mjs` writes `WATER_TEMP_HISTORY.perDay[date]` = `{ tMax14d,
+daysSinceTMax14d }`.
+
+`scoring.js:ahvenPostSpawnBoost`:
+- If `tMax14d ≥ 10 °C` AND `7 ≤ daysSinceTMax14d ≤ 14` → ×1.15
+- Otherwise ×1.0
+
+`scoring.js:kuhaSpawnPhase`:
+- If current water 12–16 °C AND `tMax14d` 12–16 °C AND `daysSinceTMax14d ≤
+  5` → ×0.55 (spawn act)
+- If `tMax14d` 12–16 °C AND `6 ≤ daysSinceTMax14d ≤ 25` → ×1.15
+  (post-spawn recovery)
+- Otherwise ×1.0
+
+### 4. Hauki autumn photoperiod bonus
+
+`scoring.js:haukiAutumnPhotoperiodBonus`. Only applies Sep 1 – Dec 1.
+Daylight from existing `approxSunHours`. Bonus = `min(0.25, (12 −
+daylightHours) × 0.04)`. Multiplier = `1 + bonus`.
+
+### 5. Algae bloom (manual user toggle)
+
+UI checkbox (`#bloomToggle`), persisted to localStorage. When checked:
+
+| Species | Multiplier |
+|---|---:|
+| siika | 0.6 |
+| ahven | 0.6 |
+| sarki | 0.7 |
+| hauki | 1.0 (no change) |
+| lahna | 1.0 (no change) |
+| kuha  | 1.1 (slight bonus, turbidity-positive) |
+
+### 6. Per-spot wind direction and habitat suitability
+
+Five named Saaristomeri shore-fishing spots in `src/spots.js`. Each spot
+has:
+- `windDirOnshore` — degree where wind FROM scores 1.0 (onshore)
+- `suitability[species]` — final multiplier (e.g. lahna at Saaronniemi
+  = 0.4, at Pansio = 1.25)
+
+`scoring.js` imports `scoreWindDirForSpot`, `spotSuitability`,
+`spotSuitabilityReason`. The siika page is locked to Saaronniemi.
+Rantakalastus + pohjaonki expose a spot dropdown; default is Saaronniemi
+for rantakalastus, Pansio for pohjaonki.
+
+### 7. Bait/lure recommendations (`baits.js`)
+
+Condition-aware recommendation engine. For each species, `BAIT_RULES` is
+an ordered list of `{ match: predicate, primary, secondary?, hint }`.
+First-match-wins. Conditions: `{ waterTempC, cloudPct, windMs,
+hourOfDay, dayOfYear, turbidity }`. Turbidity derived via
+`deriveTurbidity` from bloom flag + wind history + recent precipitation.
+
+The detail panel renders a "🎯 Tänään" block per species with primary
+lure type/size/color, a specific Finnish product, an optional secondary,
+and a Finnish-language hint.
+
+Full per-species rule list in `src/baits.js`. Sourced from Finnish
+angling press (kalassa.net, Vapaa-ajan Kalastaja, Kalastajan Kanava,
+Ruthless Fishing, etc.) — see `docs/sources.md` §7.

@@ -17,7 +17,17 @@
  *   7. SPECIES_META — labels, emoji, tackle text, peak hours.
  */
 
-import { WEATHER, HOURLY, TODAY, HATCH_BUDGET } from "./data/data.js";
+import {
+  WEATHER, HOURLY, TODAY,
+  HATCH_BUDGET, WIND_HISTORY, WATER_TEMP_HISTORY, GDD
+} from "./data/data.js";
+import {
+  scoreWindDirForSpot,
+  spotSuitability,
+  spotSuitabilityReason,
+  DEFAULT_SPOT
+} from "./spots.js";
+export { SPOTS, DEFAULT_SPOT } from "./spots.js";
 
 const TODAY_IDX = WEATHER.time.indexOf(TODAY);
 
@@ -49,6 +59,245 @@ function hatchBudgetReason(mult) {
   if (mult >= 0.7)  return "Sesonki hiipumassa";
   if (mult >= 0.4)  return "Sesonki ohi";
   return "Sesonki täysin ohi";
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 multipliers — see docs/sources.md for citations
+// ---------------------------------------------------------------------------
+
+/**
+ * 3-day wind-shore upwelling multiplier.
+ *
+ * Sustained offshore wind over ~3 days drives Ekman transport and surface
+ * cold-water upwelling. The shore stays cold and bait-depleted for days
+ * after the wind reverses. The model previously saw only "today's wind"
+ * and missed this entirely. See docs/sources.md §1.
+ *
+ * @param {number|null} windHistorySum  signed m/s·h sum over past 72 h
+ *   (positive = sustained onshore, negative = sustained offshore)
+ * @param {number} strength              species sensitivity (1.0 = full,
+ *   0.3 = lahna which uses lateral-line, 0.5 = sarki)
+ * @returns {{mult: number, reason: string|null}}
+ */
+function upwellingMultiplier(windHistorySum, strength = 1.0) {
+  if (windHistorySum == null) return { mult: 1.0, reason: null };
+  if (windHistorySum >= 0) return { mult: 1.0, reason: null };
+  // Negative sum → ramp 1.0 → 0.55 as sum becomes more negative
+  const abs = Math.min(700, Math.abs(windHistorySum));
+  const fullDamping = 0.45 * (abs / 700);    // 0..0.45
+  const damping = fullDamping * strength;
+  const mult = Math.max(0.55, 1.0 - damping);
+  let reason = null;
+  if (mult < 0.95) {
+    if (mult < 0.7)      reason = "Nouseva pohjavesi — rantakylmä jatkuu";
+    else if (mult < 0.85) reason = "Offshore-tuulta jo useamman päivän";
+    else                  reason = "Tuulihistoria epäedullinen";
+  }
+  return { mult, reason };
+}
+
+/**
+ * Bait-fish phenology multiplier — silakka + kuore inshore spawn windows.
+ *
+ * When forage fish are at the shore, predators (hauki, kuha) feed even in
+ * marginal water temperatures. GDD ranges calibrated to Saaristomeri:
+ *   - Kuore (smelt) window: GDD 80–200 → small hauki bonus
+ *   - Silakka (Baltic herring) window: GDD 200–450 → hauki + kuha bonus
+ *
+ * GDD = growing-degree-days above 4 °C accumulated from Apr 1.
+ * See docs/sources.md §2.
+ */
+function baitfishMultiplier(species, gdd) {
+  if (gdd == null) return { mult: 1.0, reason: null };
+  // Silakka window applies to predators of small pelagic fish
+  if (gdd >= 200 && gdd <= 450) {
+    if (species === "hauki" || species === "kuha") {
+      const mult = 1.15;
+      return { mult, reason: "Silakka rannalla — saalistus aktivoituu" };
+    }
+    if (species === "ahven") {
+      return { mult: 1.08, reason: "Silakka rannalla — pieni bonus" };
+    }
+  }
+  // Kuore window — slightly earlier, mainly helps cold-tolerant predators
+  if (gdd >= 80 && gdd <= 200) {
+    if (species === "hauki") {
+      return { mult: 1.07, reason: "Kuore rannalla — pieni bonus" };
+    }
+  }
+  return { mult: 1.0, reason: null };
+}
+
+/**
+ * Ahven post-spawn feeding boost.
+ *
+ * Perch spawn at 8–12 °C; post-spawn feeding peaks 7–14 days after the
+ * water-temperature peak that triggered spawning. The 7-day trend alone
+ * can't detect this — the water may have already cooled, but the feeding
+ * window is open. We use the 14-day tMax + daysSinceTMax to identify it.
+ * See docs/sources.md §3.
+ */
+function ahvenPostSpawnBoost(tempHistory) {
+  if (!tempHistory || tempHistory.tMax14d == null) return { mult: 1.0, reason: null };
+  const { tMax14d, daysSinceTMax14d } = tempHistory;
+  if (tMax14d >= 10 && daysSinceTMax14d >= 7 && daysSinceTMax14d <= 14) {
+    return { mult: 1.15, reason: "Kudun jälkeinen syöntipiikki" };
+  }
+  return { mult: 1.0, reason: null };
+}
+
+/**
+ * Kuha spawn-phase split: spawn act (×0.55) vs. post-spawn recovery (×1.15).
+ *
+ * Kuha spawn at 12–15 °C in late May/June. Feeding crashes during the
+ * 5-day spawn act, then explodes for 2–3 weeks post-spawn. We detect the
+ * phase from the relationship between current water temp, the recent
+ * 14-day max, and how long ago that max happened. See docs/sources.md §3.
+ */
+function kuhaSpawnPhase(projectedWater, tempHistory) {
+  if (!tempHistory || tempHistory.tMax14d == null) return { mult: 1.0, reason: null };
+  const { tMax14d, daysSinceTMax14d } = tempHistory;
+  const inSpawnTempBand = projectedWater >= 12 && projectedWater <= 16;
+  const peakInSpawnBand = tMax14d >= 12 && tMax14d <= 16;
+  if (inSpawnTempBand && peakInSpawnBand && daysSinceTMax14d <= 5) {
+    return { mult: 0.55, reason: "Kutu meneillään — syönti tauolla" };
+  }
+  if (peakInSpawnBand && daysSinceTMax14d >= 6 && daysSinceTMax14d <= 25) {
+    return { mult: 1.15, reason: "Kudun jälkeinen syöntipuuska" };
+  }
+  return { mult: 1.0, reason: null };
+}
+
+/**
+ * Hauki autumn photoperiod aggression bonus.
+ *
+ * Pike pre-winter feeding is co-driven by shortening day length (melatonin
+ * signaling). Score adds a multiplier from Sep 1 through Dec 1, scaled by
+ * how much daylight has shortened below 12 hours. See docs/sources.md §4.
+ */
+function haukiAutumnPhotoperiodBonus(dateStr) {
+  const m = Number(dateStr.slice(5, 7));
+  if (m < 9 || m > 12) return { mult: 1.0, reason: null };
+  // Use existing sun-hour approximation to get daylight length
+  const { sunrise, sunset } = approxSunHours(dateStr);
+  const daylight = sunset - sunrise;
+  if (daylight >= 12) return { mult: 1.0, reason: null };
+  const bonus = Math.min(0.25, (12 - daylight) * 0.04);
+  if (bonus < 0.03) return { mult: 1.0, reason: null };
+  return { mult: 1 + bonus, reason: "Syksyn lyhenevät päivät — hauki aktiivisempi" };
+}
+
+/**
+ * Algae bloom multiplier — user-toggled flag.
+ *
+ * When the user reports a visible cyanobacteria bloom, apply fixed
+ * per-species multipliers. Default state is "no bloom" (multiplier 1.0
+ * for all). See docs/sources.md §5.
+ */
+function algaeBloomMultiplier(species, bloomFlag) {
+  if (!bloomFlag) return { mult: 1.0, reason: null };
+  const table = {
+    siika: 0.6,
+    hauki: 1.0,
+    ahven: 0.6,
+    kuha:  1.1,
+    sarki: 0.7,
+    lahna: 1.0
+  };
+  const mult = table[species] ?? 1.0;
+  if (mult === 1.0) return { mult: 1.0, reason: null };
+  if (mult > 1.0)  return { mult, reason: "Levää näkyvissä — kuhalle bonus" };
+  return { mult, reason: "Levää näkyvissä — näkösyönti kärsii" };
+}
+
+/**
+ * Look up the data series entries for a given forecast date, with safe
+ * defaults if the date is outside the baked range.
+ */
+function dataAt(date) {
+  return {
+    hatchCumWarmDays: HATCH_BUDGET?.perDay?.[date] ?? null,
+    windHistorySum: WIND_HISTORY?.perDay?.[date] ?? null,
+    tempHistory: WATER_TEMP_HISTORY?.perDay?.[date] ?? null,
+    gdd: GDD?.perDay?.[date] ?? null
+  };
+}
+
+/**
+ * Apply Phase 4 multipliers to a species score. Returns the cumulative
+ * multiplier and human-readable reason strings to push onto the penalties
+ * array. Each sub-multiplier is gated by which species it applies to.
+ *
+ * @param {string} species
+ * @param {string} dateStr  ISO date "YYYY-MM-DD"
+ * @param {number} projectedWater  the water temp the scorer used for this day
+ * @param {{spot?: string, bloom?: boolean}} opts
+ */
+function applyPhase4Multipliers(species, dateStr, projectedWater, opts = {}) {
+  const { spot = DEFAULT_SPOT, bloom = false } = opts;
+  const { windHistorySum, tempHistory, gdd } = dataAt(dateStr);
+  const reasons = [];
+  let mult = 1.0;
+
+  const upwellStrength = {
+    siika: 0.6, hauki: 1.0, ahven: 1.0, kuha: 1.0, sarki: 0.5, lahna: 0.3
+  }[species] ?? 0;
+  if (upwellStrength > 0) {
+    const u = upwellingMultiplier(windHistorySum, upwellStrength);
+    if (u.mult !== 1.0) {
+      mult *= u.mult;
+      if (u.reason) reasons.push(`${u.reason} · ×${u.mult.toFixed(2)}`);
+    }
+  }
+
+  if (species === "hauki" || species === "kuha" || species === "ahven") {
+    const b = baitfishMultiplier(species, gdd);
+    if (b.mult !== 1.0) {
+      mult *= b.mult;
+      reasons.push(`${b.reason} · ×${b.mult.toFixed(2)}`);
+    }
+  }
+
+  if (species === "ahven") {
+    const s = ahvenPostSpawnBoost(tempHistory);
+    if (s.mult !== 1.0) {
+      mult *= s.mult;
+      reasons.push(`${s.reason} · ×${s.mult.toFixed(2)}`);
+    }
+  }
+  if (species === "kuha") {
+    const s = kuhaSpawnPhase(projectedWater, tempHistory);
+    if (s.mult !== 1.0) {
+      mult *= s.mult;
+      reasons.push(`${s.reason} · ×${s.mult.toFixed(2)}`);
+    }
+  }
+
+  if (species === "hauki") {
+    const p = haukiAutumnPhotoperiodBonus(dateStr);
+    if (p.mult !== 1.0) {
+      mult *= p.mult;
+      reasons.push(`${p.reason} · ×${p.mult.toFixed(2)}`);
+    }
+  }
+
+  const a = algaeBloomMultiplier(species, bloom);
+  if (a.mult !== 1.0) {
+    mult *= a.mult;
+    reasons.push(`${a.reason} · ×${a.mult.toFixed(2)}`);
+  }
+
+  // Siika is calibrated to Saaronniemi only — no spot picker, no suitability.
+  if (species !== "siika") {
+    const susMult = spotSuitability(spot, species);
+    if (susMult !== 1.0) {
+      mult *= susMult;
+      const r = spotSuitabilityReason(spot, species);
+      if (r) reasons.push(`${r} · ×${susMult.toFixed(2)}`);
+    }
+  }
+
+  return { mult, reasons };
 }
 
 // ---------------------------------------------------------------------------
@@ -179,7 +428,7 @@ export function scoreAirTrend(dt) {
  *   projectedWater: number  // °C — water temp projected to this day
  * }}
  */
-export function scoreDay(idx, waterTempToday, waterTrend7d) {
+export function scoreDay(idx, waterTempToday, waterTrend7d, opts = {}) {
   const factors = [];
 
   // Pressure change
@@ -348,6 +597,11 @@ export function scoreDay(idx, waterTempToday, waterTrend7d) {
     const reason = hatchBudgetReason(hatchMult);
     penalties.push(`${reason} (${cumWarmDays} lämmintä päivää) · ×${hatchMult.toFixed(2)}`);
   }
+
+  // Phase 4 multipliers (algae bloom for siika; upwelling at reduced strength)
+  const p4 = applyPhase4Multipliers("siika", date, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
 
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
@@ -637,7 +891,7 @@ function seasonGateLahna(dateStr, projectedWater) {
 // ---------------------------------------------------------------------------
 
 /** Score a hauki day. Same return shape as scoreDay(). */
-export function scoreHauki(idx, waterTempToday, waterTrend7d) {
+export function scoreHauki(idx, waterTempToday, waterTrend7d, opts = {}) {
   const inputs = dayInputs(idx);
   const dateStr = WEATHER.time[idx];
   const { projected: projectedWater, daysFromToday } =
@@ -648,7 +902,7 @@ export function scoreHauki(idx, waterTempToday, waterTrend7d) {
   const p24Score = scorePressureChangeHauki(inputs.dp24);
   const p48Score = scorePressureChange(inputs.dp48);
   const wSpeedScore = scoreWindSpeed(inputs.windKmh);
-  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const wDirScore = scoreWindDirForSpot(inputs.windDir, opts.spot || DEFAULT_SPOT);
   const pr24 = scorePrecipTodayHauki(inputs.precip24);
   const pr48 = scorePrecip48hHauki(inputs.precip48Prev);
   const cloudScore = scoreCloudHauki(inputs.cloudPct);
@@ -758,6 +1012,10 @@ export function scoreHauki(idx, waterTempToday, waterTrend7d) {
     penalties.push("Veden äkillinen romahdus · ×0.7");
   }
 
+  const p4 = applyPhase4Multipliers("hauki", dateStr, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -769,7 +1027,7 @@ export function scoreHauki(idx, waterTempToday, waterTrend7d) {
 }
 
 /** Score an ahven day. Same return shape as scoreDay(). */
-export function scoreAhven(idx, waterTempToday, waterTrend7d) {
+export function scoreAhven(idx, waterTempToday, waterTrend7d, opts = {}) {
   const inputs = dayInputs(idx);
   const dateStr = WEATHER.time[idx];
   const { projected: projectedWater, daysFromToday } =
@@ -780,7 +1038,7 @@ export function scoreAhven(idx, waterTempToday, waterTrend7d) {
   const p24Score = scorePressureChange(inputs.dp24);
   const p48Score = scorePressureChange(inputs.dp48);
   const wSpeedScore = scoreWindSpeed(inputs.windKmh);
-  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const wDirScore = scoreWindDirForSpot(inputs.windDir, opts.spot || DEFAULT_SPOT);
   const pr24 = scorePrecipToday(inputs.precip24);
   const pr48 = scorePrecip48h(inputs.precip48Prev);
   const cloudScore = scoreCloudAhven(inputs.cloudPct);
@@ -884,6 +1142,10 @@ export function scoreAhven(idx, waterTempToday, waterTrend7d) {
     penalties.push("Veden romahdus · ×0.7");
   }
 
+  const p4 = applyPhase4Multipliers("ahven", dateStr, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -895,7 +1157,7 @@ export function scoreAhven(idx, waterTempToday, waterTrend7d) {
 }
 
 /** Score a kuha day. Same return shape as scoreDay(). */
-export function scoreKuha(idx, waterTempToday, waterTrend7d) {
+export function scoreKuha(idx, waterTempToday, waterTrend7d, opts = {}) {
   const inputs = dayInputs(idx);
   const dateStr = WEATHER.time[idx];
   const { projected: projectedWater, daysFromToday } =
@@ -906,7 +1168,7 @@ export function scoreKuha(idx, waterTempToday, waterTrend7d) {
   const p24Score = scorePressureChange(inputs.dp24);
   const p48Score = scorePressureChange(inputs.dp48);
   const wSpeedScore = scoreWindSpeed(inputs.windKmh);
-  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const wDirScore = scoreWindDirForSpot(inputs.windDir, opts.spot || DEFAULT_SPOT);
   const pr24 = scorePrecipTodayKuha(inputs.precip24);
   const pr48 = scorePrecip48hKuha(inputs.precip48Prev);
   const cloudScore = scoreCloudKuha(inputs.cloudPct);
@@ -1011,6 +1273,10 @@ export function scoreKuha(idx, waterTempToday, waterTrend7d) {
     penalties.push("Veden romahdus · ×0.6");
   }
 
+  const p4 = applyPhase4Multipliers("kuha", dateStr, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -1026,7 +1292,7 @@ export function scoreKuha(idx, waterTempToday, waterTrend7d) {
 // ---------------------------------------------------------------------------
 
 /** Score a särki day. Same return shape as scoreDay(). */
-export function scoreSarki(idx, waterTempToday, waterTrend7d) {
+export function scoreSarki(idx, waterTempToday, waterTrend7d, opts = {}) {
   const inputs = dayInputs(idx);
   const dateStr = WEATHER.time[idx];
   const { projected: projectedWater, daysFromToday } =
@@ -1037,7 +1303,7 @@ export function scoreSarki(idx, waterTempToday, waterTrend7d) {
   const p24Score = scorePressureChange(inputs.dp24);
   const p48Score = scorePressureChange(inputs.dp48);
   const wSpeedScore = scoreWindSpeed(inputs.windKmh);
-  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const wDirScore = scoreWindDirForSpot(inputs.windDir, opts.spot || DEFAULT_SPOT);
   const pr24 = scorePrecipTodaySarki(inputs.precip24);
   const pr48 = scorePrecip48h(inputs.precip48Prev);
   const cloudScore = scoreCloudSarki(inputs.cloudPct);
@@ -1137,6 +1403,10 @@ export function scoreSarki(idx, waterTempToday, waterTrend7d) {
     penalties.push("Veden romahdus · ×0.8");
   }
 
+  const p4 = applyPhase4Multipliers("sarki", dateStr, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -1148,7 +1418,7 @@ export function scoreSarki(idx, waterTempToday, waterTrend7d) {
 }
 
 /** Score a lahna day. Same return shape as scoreDay(). */
-export function scoreLahna(idx, waterTempToday, waterTrend7d) {
+export function scoreLahna(idx, waterTempToday, waterTrend7d, opts = {}) {
   const inputs = dayInputs(idx);
   const dateStr = WEATHER.time[idx];
   const { projected: projectedWater, daysFromToday } =
@@ -1159,7 +1429,7 @@ export function scoreLahna(idx, waterTempToday, waterTrend7d) {
   const p24Score = scorePressureChangeHauki(inputs.dp24); // mild falling-pressure boost
   const p48Score = scorePressureChange(inputs.dp48);
   const wSpeedScore = scoreWindSpeed(inputs.windKmh);
-  const wDirScore = scoreWindDirGeneric(inputs.windDir);
+  const wDirScore = scoreWindDirForSpot(inputs.windDir, opts.spot || DEFAULT_SPOT);
   const pr24 = scorePrecipTodayLahna(inputs.precip24);
   const pr48 = scorePrecip48hLahna(inputs.precip48Prev);
   const cloudScore = scoreCloudLahna(inputs.cloudPct);
@@ -1274,6 +1544,10 @@ export function scoreLahna(idx, waterTempToday, waterTrend7d) {
     penalties.push("Veden romahdus — lahna pakenee · ×0.7");
   }
 
+  const p4 = applyPhase4Multipliers("lahna", dateStr, projectedWater, opts);
+  mult *= p4.mult;
+  for (const r of p4.reasons) penalties.push(r);
+
   return {
     total: Math.max(0, Math.min(100, Math.round(baseScore * mult))),
     baseScore: Math.round(baseScore),
@@ -1289,14 +1563,14 @@ export function scoreLahna(idx, waterTempToday, waterTrend7d) {
 // ---------------------------------------------------------------------------
 
 /** Score a single species for a single day. */
-export function scoreSpecies(species, idx, waterTempToday, waterTrend7d) {
+export function scoreSpecies(species, idx, waterTempToday, waterTrend7d, opts = {}) {
   switch (species) {
-    case "siika": return scoreDay(idx, waterTempToday, waterTrend7d);
-    case "hauki": return scoreHauki(idx, waterTempToday, waterTrend7d);
-    case "ahven": return scoreAhven(idx, waterTempToday, waterTrend7d);
-    case "kuha":  return scoreKuha(idx, waterTempToday, waterTrend7d);
-    case "sarki": return scoreSarki(idx, waterTempToday, waterTrend7d);
-    case "lahna": return scoreLahna(idx, waterTempToday, waterTrend7d);
+    case "siika": return scoreDay(idx, waterTempToday, waterTrend7d, opts);
+    case "hauki": return scoreHauki(idx, waterTempToday, waterTrend7d, opts);
+    case "ahven": return scoreAhven(idx, waterTempToday, waterTrend7d, opts);
+    case "kuha":  return scoreKuha(idx, waterTempToday, waterTrend7d, opts);
+    case "sarki": return scoreSarki(idx, waterTempToday, waterTrend7d, opts);
+    case "lahna": return scoreLahna(idx, waterTempToday, waterTrend7d, opts);
     default: throw new Error("Unknown species: " + species);
   }
 }
@@ -1307,11 +1581,11 @@ export function scoreSpecies(species, idx, waterTempToday, waterTrend7d) {
  *
  * @returns {{ best: "hauki"|"ahven"|"kuha", scores: { hauki, ahven, kuha } }}
  */
-export function scoreRantakalastus(idx, waterTempToday, waterTrend7d) {
+export function scoreRantakalastus(idx, waterTempToday, waterTrend7d, opts = {}) {
   const scores = {
-    hauki: scoreHauki(idx, waterTempToday, waterTrend7d),
-    ahven: scoreAhven(idx, waterTempToday, waterTrend7d),
-    kuha:  scoreKuha(idx, waterTempToday, waterTrend7d)
+    hauki: scoreHauki(idx, waterTempToday, waterTrend7d, opts),
+    ahven: scoreAhven(idx, waterTempToday, waterTrend7d, opts),
+    kuha:  scoreKuha(idx, waterTempToday, waterTrend7d, opts)
   };
   const order = ["hauki", "ahven", "kuha"];
   let best = order[0];
@@ -1327,10 +1601,10 @@ export function scoreRantakalastus(idx, waterTempToday, waterTrend7d) {
  *
  * @returns {{ best: "sarki"|"lahna", scores: { sarki, lahna } }}
  */
-export function scorePohjaonki(idx, waterTempToday, waterTrend7d) {
+export function scorePohjaonki(idx, waterTempToday, waterTrend7d, opts = {}) {
   const scores = {
-    sarki: scoreSarki(idx, waterTempToday, waterTrend7d),
-    lahna: scoreLahna(idx, waterTempToday, waterTrend7d)
+    sarki: scoreSarki(idx, waterTempToday, waterTrend7d, opts),
+    lahna: scoreLahna(idx, waterTempToday, waterTrend7d, opts)
   };
   const best = scores.sarki.total >= scores.lahna.total ? "sarki" : "lahna";
   return { best, scores };
@@ -1405,8 +1679,8 @@ function scoreTimeOfDay(species, dateStr, hour) {
  * Hourly composite score for a species. Blends the daily score with the
  * time-of-day factor. Cheap on purpose — only invoked during detail render.
  */
-export function scoreHour(species, idx, hour, waterTempToday, waterTrend7d) {
-  const daily = scoreSpecies(species, idx, waterTempToday, waterTrend7d);
+export function scoreHour(species, idx, hour, waterTempToday, waterTrend7d, opts = {}) {
+  const daily = scoreSpecies(species, idx, waterTempToday, waterTrend7d, opts);
   const dateStr = WEATHER.time[idx];
   const tod = scoreTimeOfDay(species, dateStr, hour);
   // Hourly = daily score modulated by time-of-day (0.4x at worst, 1.0x at peak)
@@ -1418,11 +1692,11 @@ export function scoreHour(species, idx, hour, waterTempToday, waterTrend7d) {
  * Find the best 2-hour window of a day for a species.
  * @returns {{ startHour: number, endHour: number, score: number }}
  */
-export function bestHourWindow(species, idx, waterTempToday, waterTrend7d) {
+export function bestHourWindow(species, idx, waterTempToday, waterTrend7d, opts = {}) {
   let best = { startHour: 0, endHour: 2, score: 0 };
   for (let h = 0; h <= 22; h++) {
-    const s1 = scoreHour(species, idx, h, waterTempToday, waterTrend7d);
-    const s2 = scoreHour(species, idx, h + 1, waterTempToday, waterTrend7d);
+    const s1 = scoreHour(species, idx, h, waterTempToday, waterTrend7d, opts);
+    const s2 = scoreHour(species, idx, h + 1, waterTempToday, waterTrend7d, opts);
     const avg = (s1 + s2) / 2;
     if (avg > best.score) {
       best = { startHour: h, endHour: h + 2, score: Math.round(avg) };
